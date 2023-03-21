@@ -1,0 +1,42 @@
+(define-module (skyler guix pack)
+	#:use-module ((guix profiles)                #:prefix guix:)
+	#:use-module ((skyler guix collections)      #:prefix sky:)
+	#:use-module ((skyler guix packages)         #:prefix sky:)
+
+	#:use-module ((gnu packages admin)           #:prefix guix:)
+	#:use-module ((gnu packages base)            #:prefix guix:)
+	#:use-module ((gnu packages code)            #:prefix guix:)
+	#:use-module ((gnu packages compression)     #:prefix guix:)
+	#:use-module ((gnu packages emacs)           #:prefix guix:)
+	#:use-module ((gnu packages guile)           #:prefix guix:)
+	#:use-module ((gnu packages tmux)            #:prefix guix:)
+	#:use-module ((gnu packages version-control) #:prefix guix:)
+	#:use-module ((gnu packages vim)             #:prefix guix:)
+
+	#:export (manifest)
+)
+
+(define manifest (guix:packages->manifest (list
+	guix:atool
+	guix:git
+	guix:glibc-locales
+	guix:guile-3.0-latest
+	guix:guile-readline
+	guix:neovim
+	guix:tar
+	guix:the-silver-searcher
+	guix:tmux
+	guix:tree
+
+	sky:vim-solarized8
+
+	;; I'm not sure if we have enough compression algorithms yet
+	guix:tar ; reducing inode usage could technically be considered compression =)
+	guix:gzip
+	guix:bzip2
+	guix:xz
+	guix:lzip
+	guix:zip
+)))
+
+manifest
