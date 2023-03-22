@@ -30,11 +30,21 @@
 	tenth
 
 	; from this module
+	flatten
 	rest
 )
 
 (begin
 
 (define rest cdr)
+
+(define (flatten lst)
+	(define (flatten-impl lst result)
+		(cond
+			((null? lst) result)
+			((list? (first lst))
+				(flatten-impl (rest lst) (flatten-impl (first lst) result)))
+			(#t (flatten-impl (rest lst) (cons (first lst) result)))))
+	(reverse (flatten-impl lst '())))
 
 ))
