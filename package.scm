@@ -21,8 +21,8 @@
 
 (define version "0.0")
 
-(define guile-code (guix:package
-	(name        "guile-code")
+(define base-guile-code (guix:package
+	(name        "base-guile-code")
 	(version     version)
 	(source      #f)
 	(description #f)
@@ -34,7 +34,6 @@
 
 	(native-inputs (list
 		guix:guile-3.0-latest
-		guix:guile-gcrypt
 	))
 
 	(arguments `(
@@ -49,15 +48,49 @@
 				; module structure inside an actual implementation
 				(lambda* (#:key inputs #:allow-other-keys)
 					(use-modules (guix build utils))
-					(let ((guile-src ,(guix:local-file "src/scheme/guile" #:recursive? #t))
-					      (r7rs-src ,(guix:local-file "src/scheme/r7rs" #:recursive? #t))
+					(let ((guile-src ,(guix:local-file "src/scheme/guile/base" #:recursive? #t))
+					      (r7rs-src ,(guix:local-file "src/scheme/r7rs/base" #:recursive? #t))
 					     )
-						(format #t "~A~%" guile-src)
-						(format #t "~A~%" r7rs-src)
-
 						(copy-recursively guile-src "./skyler")
-						(mkdir-p "./skyler/r7rs")
 						(copy-recursively r7rs-src "./skyler/r7rs")
+			)))
+		)
+	))
+))
+
+(define guix-code (guix:package
+	(name        "guix-code")
+	(version     version)
+	(source      #f)
+	(description #f)
+	(synopsis    #f)
+	(home-page   #f)
+	(license     #f)
+
+	(build-system guix:guile-build-system)
+
+	(native-inputs (list guix:guile-3.0-latest))
+
+	; need to propagate because we're not compiling, see also the note on the
+	; #:not-compiled-file-regexp argument
+	(propagated-inputs (list
+		guix:guile-gcrypt
+		base-guile-code
+	))
+
+	(arguments `(
+		; don't compile anything, we always want to use the system's guix, not some snapshot
+		#:not-compiled-file-regexp ".*"
+
+		#:phases (modify-phases (@ (guix build guile-build-system) %standard-phases)
+			(delete 'unpack)
+			(add-before 'set-locale-path 'fix-paths
+				; Paths in the filesystem are sensible for editing, but not a useful
+				; module structure inside an actual implementation
+				(lambda* (#:key inputs #:allow-other-keys)
+					(use-modules (guix build utils))
+					(let ((guile-src ,(guix:local-file "src/scheme/guile/guix" #:recursive? #t)))
+						(copy-recursively guile-src "./skyler/guix")
 			)))
 		)
 	))
@@ -73,7 +106,7 @@
 
 	(build-system      guix:trivial-build-system)
 	(source            #f)
-	(propagated-inputs (list guile-code ))
+	(propagated-inputs (list base-guile-code guix-code))
 	(arguments         `(#:builder (begin (mkdir (assoc-ref %outputs "out")))))))
 
 personal-code

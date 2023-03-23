@@ -39,6 +39,6 @@
 				(list (path-append "PATH" "$HOME/.local/bin")
 				      (path-append "GUILE_LOAD_PATH" "$HOME/.guix-profile/share/guile/site/3.0")
 				      (path-append "GUILE_LOAD_COMPILED_PATH"
-				                   "$HOME/.guix-profile/share/guile/site/3.0")
+				                   "$HOME/.guix-profile/lib/guile/3.0/site-ccache")
 			))
 ))))
