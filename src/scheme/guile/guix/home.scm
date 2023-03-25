@@ -36,8 +36,11 @@
 				(guix:home-fish-configuration))
 			(guix:simple-service 'custom-env-vars
 				guix:home-environment-variables-service-type
-				(list (path-append "PATH" "$HOME/.local/bin")
+				(list (cons "EDITOR" "nvim")
+
+				      (path-append "PATH"            "$HOME/.local/bin")
 				      (path-append "GUILE_LOAD_PATH" "$HOME/.guix-profile/share/guile/site/3.0")
+
 				      (path-append "GUILE_LOAD_COMPILED_PATH"
 				                   "$HOME/.guix-profile/lib/guile/3.0/site-ccache")
 			))
