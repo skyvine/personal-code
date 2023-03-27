@@ -19,6 +19,12 @@
 
 (define version "0.0")
 
+(define guile-search-paths (list
+	(guix:search-path-specification (variable "GUILE_LOAD_PATH")
+	                                (files (list "share/guile/site/3.0")))
+	(guix:search-path-specification (variable "GUILE_LOAD_COMPILED_PATH")
+	                                (files (list "share/guile/3.0/site-ccache")))))
+
 (define base-guile-code
 	(let ((guile-src (guix:local-file "src/scheme/guile/base" #:recursive? #t))
 	      (r7rs-src  (guix:local-file "src/scheme/r7rs/base" #:recursive? #t)))
@@ -32,6 +38,7 @@
 			(license     #f)
 
 			(build-system guix:guile-build-system)
+			(native-search-paths guile-search-paths)
 
 			(native-inputs (list guix:guile-3.0-latest guile-src r7rs-src))
 
@@ -61,9 +68,9 @@
 			(home-page   #f)
 			(license     #f)
 
-			(build-system guix:guile-build-system)
-
-			(native-inputs (list guix:guile-3.0-latest))
+			(build-system        guix:guile-build-system)
+			(native-search-paths guile-search-paths)
+			(native-inputs       (list guix:guile-3.0-latest))
 
 			; need to propagate because we're not compiling, see also the note on the
 			; #:not-compiled-file-regexp argument
@@ -95,9 +102,10 @@
 			(description #f)
 			(license     #f)
 
-			(build-system  guix:gnu-build-system)
-			(source        #f)
-			(native-inputs (list guix:guile-3.0-latest (local-file "src/bin/make.scm")))
+			(build-system        guix:gnu-build-system)
+			(native-search-paths guile-search-paths)
+			(source              #f)
+			(native-inputs       (list guix:guile-3.0-latest (local-file "src/bin/make.scm")))
 
 			(arguments (list
 				#:phases
@@ -124,9 +132,10 @@
 	(home-page         #f)
 	(license           #f)
 
-	(build-system      guix:trivial-build-system)
-	(source            #f)
-	(propagated-inputs (list base-guile-code guix-code make.scm))
-	(arguments         `(#:builder (begin (mkdir (assoc-ref %outputs "out")))))))
+	(build-system        guix:trivial-build-system)
+	(native-search-paths guile-search-paths)
+	(source              #f)
+	(propagated-inputs   (list base-guile-code guix-code make.scm))
+	(arguments           `(#:builder (begin (mkdir (assoc-ref %outputs "out")))))))
 
 personal-code
