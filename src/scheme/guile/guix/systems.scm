@@ -2,6 +2,7 @@
 	#:use-module ((gnu bootloader)          #:prefix guix:)
 	#:use-module ((gnu bootloader grub)     #:prefix guix:)
 	#:use-module ((gnu services)            #:prefix guix:)
+	#:use-module ((gnu services ssh)        #:prefix guix:)
 	#:use-module ((gnu system)              #:prefix guix:)
 	#:use-module ((gnu system accounts)     #:prefix guix:)
 	#:use-module ((gnu system file-systems) #:prefix guix:)
@@ -43,7 +44,12 @@
 
 		(packages (append sky:essential-packages sky:luxury-packages))
 
-		(services (append sky:global-services (sky:luxury-services keyboard-layout)
+		(services (append sky:global-services
+		                  (list (guix:service guix:openssh-service-type
+		                                      (guix:openssh-configuration
+		                                        (password-authentication? #f)
+		                                        (use-pam? #f))))
+		                  (sky:luxury-services keyboard-layout)
 		                  (sky:qubes-networking-services #:ip ip
 		                                                 #:virtual-dns virtual-dns)))))
 
