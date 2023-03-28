@@ -7,7 +7,19 @@ day-to-day with guile, dropping into C\* where appropriate.
   C already is. On the table though.
 
 # License
-TODO
+All sofware in this repository is licensed under the Affero GNU Public License, version 3
+or any later version.
+
+I default to using the AGPL 3 or later unless there is a strong reason to downgrade to the
+plain GPL or the LGPL. Non-GNU licenses are off the table.
+
+[The FSF has published advice on license selection.](https://www.gnu.org/licenses/license-recommendations.html)
+I generally agree with this advice, except that they recommend using the AGPL only when it
+"seems likely" that the software will be used on a server. I don't see any reason to make
+a judgement about the liklihood here - if the work is licensed under the AGPL and never
+gets used on a server, then it is effectively licensed on the GPL and all is well. If it
+is licensed under the GPL and is unexpectedly used on a server, recovery is difficult, if
+it is even possible.
 
 # Organization
 Typically, repositories for scripting languages have a structure that mirror their install
