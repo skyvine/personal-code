@@ -46,13 +46,21 @@
 		                    sky:essential-file-systems))
 
 		(keyboard-layout (guix:keyboard-layout "us" "dvp" #:options '("caps:escape")))
-		(users (cons
+		(users (cons*
 		        (guix:user-account (name "skyler")
 		                           (group "users")
 		                           (supplementary-groups '("wheel"
 		                                                   "audio"
 		                                                   "video"))
 		                           (shell (guix:file-append guix:fish "/bin/fish")))
+
+		        ; user with clean environment for testing
+		        (guix:user-account (name "testuser")
+		                           (group "users"))
+
+		        (guix:user-account (name "testuser-with-home")
+		                           (group "users"))
+
 		        guix:%base-user-accounts))
 
 		(packages (append sky:essential-packages sky:luxury-packages))
