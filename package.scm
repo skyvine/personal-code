@@ -68,7 +68,21 @@
 						(lambda* (#:key inputs #:allow-other-keys)
 							(use-modules (guix build utils))
 							(copy-recursively #$guile-src "./skyler")
-							(copy-recursively #$r7rs-src "./skyler/r7rs")))))))))
+							(copy-recursively #$r7rs-src "./skyler/r7rs")))
+
+					(add-after 'install-documentation 'check
+						(lambda* (#:key inputs #:allow-other-keys)
+							(invoke  (string-append (assoc-ref inputs "guile") "/bin/guile") "-c"
+					             (call-with-output-string (lambda (port)
+					             	(write '(begin (use-modules (skyler r7rs test)) (main)) port))))
+					))
+					(add-after 'check 'save-logs
+						(lambda* (#:key outputs #:allow-other-keys)
+							(let ((log-dir (string-append (assoc-ref outputs "out") "/test-logs/")))
+								(mkdir-p log-dir)
+								(map (lambda (filename) (copy-file filename
+								                                   (string-append log-dir filename)))
+								     (find-files "." ".*\\.log")))))))))))
 
 (define guix-code
 	(let ((guix-code (guix:local-file "src/scheme/guile/guix" #:recursive? #t)))

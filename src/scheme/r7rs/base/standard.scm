@@ -78,10 +78,10 @@
 (define (flatten lst)
 	(define (flatten-impl lst result)
 		(cond
-			((null? lst) (reverse result))
+			((null? lst) result)
 			((list? (first lst))
 				(flatten-impl (rest lst) (flatten-impl (first lst) result)))
 			(#t (flatten-impl (rest lst) (cons (first lst) result)))))
-	(flatten-impl lst '()))
+	(reverse (flatten-impl lst '())))
 
 ))
