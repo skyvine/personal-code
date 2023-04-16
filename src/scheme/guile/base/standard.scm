@@ -14,6 +14,8 @@
 (define-module (skyler standard)
 	#:use-module (ice-9 optargs)
 	#:use-module (skyler r7rs standard)
+
+	#:export (re-export-all)
 )
 
 (define (hash-table-keys ht)

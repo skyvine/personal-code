@@ -32,6 +32,18 @@
 
 (define version "0.0")
 
+(define (check module-names)
+	`(lambda* (#:key inputs #:allow-other-keys)
+		(for-each (lambda (module-name)
+			(invoke  (string-append (assoc-ref inputs "guile") "/bin/guile") "-c"
+					             (call-with-output-string (lambda (port)
+					             	(write `(begin (use-modules ,module-name) (main)) port)))))
+			',module-names)
+
+		; TODO: Catch the errors thrown by invoke and report the full test results, instead of
+		; stopping after a single failure.
+		))
+
 (define guile-search-paths (list
 	(guix:search-path-specification (variable "GUILE_LOAD_PATH")
 	                                (files (list "share/guile/site/3.0")))
@@ -71,18 +83,9 @@
 							(copy-recursively #$r7rs-src "./skyler/r7rs")))
 
 					(add-after 'install-documentation 'check
-						(lambda* (#:key inputs #:allow-other-keys)
-							(invoke  (string-append (assoc-ref inputs "guile") "/bin/guile") "-c"
-					             (call-with-output-string (lambda (port)
-					             	(write '(begin (use-modules (skyler r7rs test)) (main)) port))))
-					))
-					(add-after 'check 'save-logs
-						(lambda* (#:key outputs #:allow-other-keys)
-							(let ((log-dir (string-append (assoc-ref outputs "out") "/test-logs/")))
-								(mkdir-p log-dir)
-								(map (lambda (filename) (copy-file filename
-								                                   (string-append log-dir filename)))
-								     (find-files "." ".*\\.log")))))))))))
+						#$(check '((skyler r7rs test)
+						           (skyler test)
+)))))))))
 
 (define guix-code
 	(let ((guix-code (guix:local-file "src/scheme/guile/guix" #:recursive? #t)))

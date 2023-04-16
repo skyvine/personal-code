@@ -8,6 +8,7 @@
 
 (export
 	define-test
+	run-test
 	run-tests
 
 	log-port
@@ -35,15 +36,18 @@
 			      (test-runner-xpass-count runner)
 			      (test-runner-xfail-count runner))))
 
+(define (run-test human-name thunk)
+	(test-begin human-name)
+	(thunk)
+	(let ((result (tests-succeeded? (test-runner-get))))
+		(test-end human-name)
+		result))
+
 (define-syntax define-test
 	(syntax-rules ()
 		((_ code-name human-name exp exp* ...)
-		 (define (code-name)
-		 	(test-begin human-name)
-			exp exp* ...
-			(let ((result (tests-succeeded? (test-runner-get))))
-				(test-end)
-				result)))))
+			(define (code-name)
+				(run-test human-name (lambda () exp exp* ...))))))
 
 (define run-tests (lambda tests
 	"
