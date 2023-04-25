@@ -21,11 +21,11 @@
 ; #:init-value, or #:init-thunk. The slot will be unbound unless a value is passed through
 ; the #:init-keyword, so it is mandatory.
 ;
-; A slot is optional if it has an #:init-keyword, and has AT LEAST ONE* of an #:init-form,
+; A slot is optional if it has an #:init-keyword, and has AT LEAST ONE of an #:init-form,
 ; #:init-value, or #:init-thunk. The slot will be bound even if no value is passed through
 ; the #:init-keyword, so it is optional.
 ;
-; A slot is implicit if it does not have an #:init-keyword. Regardless of the other
+; A slot is implicit if it does NOT have an #:init-keyword. Regardless of the other
 ; options, if there is no #:init-keyword then it is not possible to explicitly pass in a
 ; value, so it must be implicitly defined, even if that definition leaves it unbound.**
 ;
@@ -49,6 +49,7 @@
 
 (define-module (skyler class-conventions)
 	#:use-module (oop goops)
+	#:use-module (skyler standard)
 	#:use-module (srfi srfi-1)
 	#:use-module (srfi srfi-69)
 
@@ -99,7 +100,7 @@
 	          ensure-all-slots-are-bound
 	          ; Signature: (ensure-all-slots-are-bound
 	          ;              instance
-	          ;              #:key (on-unbound unbound-throws-error))
+	          ;              key: (on-unbound unbound-throws-error))
 	          ;
 	          ; Arguments:
 	          ; instance: The instance whose slots should be examined
@@ -127,7 +128,7 @@
 	          ; A procedure-with-setter appropriate for accessing user-data. The accessor
 	          ; has the following signature:
 	          ;
-	          ; (<accessor-name> instance key #:optional missing-handler)
+	          ; (<accessor-name> instance key optional: missing-handler)
 	          ;
 	          ; Arguments:
 	          ; instance: the task instance associated with the relevant datum.
@@ -217,7 +218,7 @@
 	(error (reduce-right string-append #f (cons (format #f "Unbound slots:~%")
 	                                            (map slot->indented-name unbound-slots)))))
 
-(define* (ensure-all-slots-are-bound instance #:key (on-unbound unbound-throws-error))
+(define* (ensure-all-slots-are-bound instance key: (on-unbound unbound-throws-error))
 	(define (slot-unbound? slot)
 		(if (slot-bound? instance (slot-definition-name slot))
 			#f
@@ -241,7 +242,7 @@
 	(define (missing-key-is-error key)
 		(error (format #f "Key ~s not found in user data." key)))
 
-	(define* (get instance key #:optional (missing-handler missing-key-is-error))
+	(define* (get instance key optional: (missing-handler missing-key-is-error))
 		(hash-table-ref (ref instance) key (lambda () (missing-handler key))))
 
 	(define (set instance key new-value)

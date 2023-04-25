@@ -18,6 +18,7 @@
 	(scheme case-lambda)
 	(scheme write)
 	(srfi 1)
+	(srfi 88)
 )
 
 (export

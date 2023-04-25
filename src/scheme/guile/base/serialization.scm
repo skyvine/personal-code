@@ -19,12 +19,12 @@
 ; of a class representing a 2d point defined as:
 ;
 ; (define-class <point> ()
-; 	(x #:init-keyword #:x #:accessor x)
-; 	(y #:init-keyword #:y #:accessor y))
+; 	(x init-keyword: x: accessor: x)
+; 	(y init-keyword: y: accessor: y))
 ;
 ; Would be serialized as:
 ;
-; (<point> #:x 4 #:y 2)
+; (<point> x: 4 y: 2)
 ;
 ; The exhaustive description is that mandatory and optional slots are serialized by adding
 ; the appopriate keyword and the serialization of the slot's value to the list, while
@@ -127,7 +127,7 @@
 ;    data like keywords, numbers, strings, etc, but it can also include instances which
 ;    have been serialized, as they will be recursively deserialized before your custom
 ;    deserializer is called.
-(define* (serialize-slot slot-definition obj #:optional (port (current-output-port)))
+(define* (serialize-slot slot-definition obj optional: (port (current-output-port)))
 	(let ((init-keyword (slot-definition-init-keyword slot-definition)))
 		(if init-keyword
 			(list init-keyword

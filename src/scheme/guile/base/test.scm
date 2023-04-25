@@ -24,8 +24,8 @@
 ; user-defined GOOPS classes should be serializable so long as they follow the conventions
 ; described in (skyler class-conventions).
 (define-class <simple-class> ()
-	(slot-containing-boolean #:init-keyword #:slot-containing-boolean #:init-form #t)
-	(slot-containing-number  #:init-keyword #:slot-containing-number  #:init-form 616))
+	(slot-containing-boolean init-keyword: #:slot-containing-boolean init-form: #t)
+	(slot-containing-number  init-keyword: #:slot-containing-number  init-form: 616))
 
 (define-method (display (obj <simple-class>) port)
 	(format port "(<simple-class> (bool: ~s) (number: ~s))"
@@ -39,8 +39,8 @@
 	             (slot-ref rhs 'slot-containing-number))))
 
 (define-class <complex-class> ()
-	(slot-containing-user-defined-class #:init-keyword #:slot-containing-user-defined-class
-	                                    #:init-form (make <simple-class>)))
+	(slot-containing-user-defined-class init-keyword: #:slot-containing-user-defined-class
+	                                    init-form:    (make <simple-class>)))
 
 (define-method (display (obj <complex-class>) port)
 	(format port "(<simple-class> (user-defined-class: ~s))"
@@ -64,7 +64,7 @@
 	; Symbol N/A    - these are typically meant to be evaluated, not stand-alone objects
 	("Vector"       . #(#t #\a))
 
-	("Keyword"       . #:lockword)
+	("Keyword"       . lockword:)
 	("Simple Class"  . ,(make <simple-class>))
 	("Complex Class" . ,(make <complex-class>))))
 

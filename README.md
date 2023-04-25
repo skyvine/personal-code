@@ -54,6 +54,35 @@ it written down helps.
 I use 90 characters as the limit. This is a completely arbitrary decision, 90 characters
 lets me fit 2 side-by-side file on my monitor with a little bit of breathing room.
 
+## Keyword Syntax
+I load srfi-88 style keywords, meaning that `example:` (postfix syntax) is just as much a
+keyword as `#:example` (default syntax). Both syntaxes are used.
+
+The default syntax is needed in `define-module` declarations to prevent an error, because
+the reader option has not been set until *after* the `define-module` form has been
+evaluated (the postfix syntax works in some cases, the reader is global state).
+
+Otherwise, keywords use the default syntax when they are valued and the postfix syntax
+when they are labels (eg, keyword arguments to a define\* function). This is illustrated
+simply in a GOOPS class declaration:
+
+```scheme
+(use-modules (srfi srfi-88) (oop goops))
+(define-class <example>
+	(some-data init-keyword: #:some-data init-value: '()))
+```
+
+And can also be seen in a define\* declaration:
+
+```scheme
+(define* (example key: some-argument some-other-argument #:allow-other-keys)
+	(do-all-the-stuff!))
+```
+
+Using the postfix syntax for labels indicates to the reader that the keyword is directly
+linked to the following value(s), due to the meaning of a postfix colon character in
+English prose. Using the default syntax for values avoids this misleading indication.
+
 ## Leading blankspace
 I use tabs for indentation and spaces for alignment. This is advantageous because it
 makes use of a user's tab setting's effectively. When a new line should add an extra
@@ -91,17 +120,24 @@ structured editing tools, but I have not yet invested time into them.
 \*\* Bug-free is a completely realistic goal I don't know what you're talking about.
 
 ## Namespacing Symbols
-When writing libraries, I do not pre-namespaces symbols. Guile provides convenient
-facilities for dependent modules to rename symbols in an appropriate matter, and I
-consider it better to leave that decision up to the user rather than enforcing my own
-namespacing convention.
+When writing libraries, I do not pre-namespaces symbols For example, an accessor for a
+member named `member` in a class named `class` would simply be `member`, not
+`class-member`. Guile provides convenient facilities for dependent modules to rename
+symbols in an appropriate matter, and I consider it better to leave that decision up to
+the user rather than enforcing my own namespacing convention.
 
-When importing libraries, I namespace with the prefix `project-name:`. This help me keep
+When importing libraries, I namespace with the prefix `project-name.`. This help me keep
 track of what projects I'm dependent on in which ways. For example, when importing form
-`(gnu packages *)` I use `#:prefix guix:` rather than `#:prefix gnu:` because guix is the
+`(gnu packages *)` I use `#:prefix guix.` rather than `#:prefix gnu.` because guix is the
 project that the code (eg, the package definition) is being imported from. This is
 followed most of the time but is not completely strict, for example when importing the
-licences module I use the `license:` prefix for readability.
+licences module I use the `license.` prefix for consistency.
+
+It is common to use a colon for namespacing in scheme, but this causes confusion with
+keywords that use the postfix syntax. First, it can confuse syntax highlighting when
+referencing members unless care is taken to look ahead. Second, in the `#:prefix` form,
+the syntax is indistinguishable to the point that in some cases guile will throw an error
+because the argument is read as a keyword, and #:prefix must be given a symbol.
 
 Most imports use a prefix. The main exceptions are `(skyler standard)` and anything that
 is importand from the language or the implementation's standard libraries. Other

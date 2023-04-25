@@ -45,10 +45,10 @@
 
 	```scm
 	(define-class <cross-stitch-pattern> ()
-		(name        #:init-keyword #:name)
-		(size        #:init-keyword #:size)
-		(description #:init-keyword #:description #:init-form \"\")
-		(quality     #:init-keyword #:quality     #:init-form #f))
+		(name        init-keyword: #:name)
+		(size        init-keyword: #:size)
+		(description init-keyword: #:description init-form: \"\")
+		(quality     init-keyword: #:quality     init-form: #f))
 	```
 
 	All patterns must have a name and a size, but description and quality might be default
@@ -101,7 +101,7 @@
 		     	(apply make class (append (apply append slot-combination) mandatory-args)))
 		     (n-ary-combinations optional-args))))
 
-(define* (print-all-fields obj port #:optional (oneline? #f))
+(define* (print-all-fields obj port optional: (oneline? #f))
 	"Pretty-print an object by printing the class name, then the each of the fields."
 	(if (string? obj)
 		(display obj port)
