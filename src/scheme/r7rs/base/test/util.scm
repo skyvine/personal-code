@@ -2,13 +2,14 @@
 
 (import
 	(scheme base)
+	(scheme write)
 	(srfi 1)
 	(srfi 64)
 )
 
 (export
 	define-test
-	run-test
+	make-test
 	run-tests
 
 	log-port
@@ -36,30 +37,39 @@
 			      (test-runner-xpass-count runner)
 			      (test-runner-xfail-count runner))))
 
-(define (run-test human-name thunk)
-	(test-begin human-name)
-	(thunk)
-	(let ((result (tests-succeeded? (test-runner-get))))
-		(test-end human-name)
-		result))
+(define (print-exception exception port)
+	(display "Exception: " port) (write exception port) (newline port))
+
+(define-syntax make-test
+	(syntax-rules ()
+		((_ human-name exp exp* ...)
+			(lambda ()
+				(test-begin human-name)
+				(call-with-current-continuation (lambda (c)
+					(with-exception-handler
+						(lambda (exception)
+							(print-exception exception ((log-port)))
+							(print-exception exception (current-output-port))
+							(test-assert #f)
+							(c #f))
+						(lambda () exp exp* ...))))
+				(let ((result (tests-succeeded? (test-runner-get))))
+					(test-end human-name)
+					result)))))
 
 (define-syntax define-test
 	(syntax-rules ()
 		((_ code-name human-name exp exp* ...)
-			(define (code-name)
-				(run-test human-name (lambda () exp exp* ...))))))
+			(define code-name (make-test human-name exp exp* ...)))))
 
-(define run-tests (lambda tests
-	"
-	Run all of the tests. Return false if any of them fail, otherwise return true.
+(define (run-tests tests)
+	"Run all of the tests. Return false if any of them fail, otherwise return true.
 
-	This method is designed to avoid short-circuiting so that all of the tests actually run.
-	Passing and to fold directly doesn't work, because and is a macro not a function. Which
-	makes sense when you consider the concept of short-circuiting. =)
-	"
+	This method is designed to avoid short-circuiting so that all of the test results are
+	reported."
 
 	(fold (lambda (lhs rhs) (and lhs rhs)) #t
-	      (map (lambda (f) (f)) tests))))
+	      (map (lambda (f) (f)) tests)))
 
 (define (print-data-on-fail print comp lhs rhs)
 	(if (comp lhs rhs)

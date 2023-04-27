@@ -33,17 +33,74 @@
 
 (define version "0.0")
 
+(define inject-store-paths
+	'(lambda* (key: inputs #:allow-other-keys)
+		; TODO: don't make users manually add this... seriously...
+		(unless (assoc-ref inputs "glibc-locales")
+			(error "The inject-store-paths phase requires glibc-locales as an input."))
+
+		; Need to set the locale for characters used in flow charts
+		(setenv "GUIX_LOCPATH"
+		        (string-append (assoc-ref inputs "glibc-locales") "/lib/locale"))
+		(setlocale LC_ALL "en_US.utf8")
+
+		(substitute* (find-files ".")
+			(("%%([a-z0-9_-]*) (.*)%%" _ name path)
+			 (if (assoc-ref inputs name)
+			 	(string-append (assoc-ref inputs name) "/" path)
+			 	(error (format #f "Input ~s not found!" name))))
+)))
+
+(define no-tests-error-message
+	`(format #f
+		,(string-append "The test module ~a does not define the all-tests variable. This "
+		               "should be a list of functions as created by define-test or , from "
+		               "make-testthe (skyler r7rs test utils) module.")
+		module-name))
+
+(define check-runner 
+	`(lambda (module-name) (save-module-excursion (lambda ()
+		; set! the %load-path manually instead of using add-to-load-path in order to make sure
+		; the code at the end which undoes the modification works correctly. Also, the manual
+		; recommends using add-to-load-path so that it is modified at compile-time, but this
+		; will not be compiled before running (note that we are in a quasiquote), and we're
+		; depending on the environment (shudders) here anyway, so we don't want it to take
+		; effect at compile-time even if it was compiled. Module introspection is fun. =]
+		(set! %load-path (cons (getcwd) %load-path))
+		(let ((test-module (resolve-module module-name #:ensure #f)))
+			(unless test-module
+				(error (format #f "The test module ~a does not exist." module-name)))
+
+			(unless (module-variable test-module 'all-tests)
+				(error ,no-tests-error-message))
+
+			; Set the current module to make sure we have
+			; dependencies. This is particularly relevant for the
+			; serialization tests, since serialization uses eval.
+			(set-current-module test-module)
+
+			; Don't import the util module so we don't pollute the environment. all-tests is a 
+			; magic symbol that test modules must provide.
+			; Also: There is a strange issue where referencing all-tests directly here results
+			; in an undefined variable error, even though the module has been set. The error
+			; message indicates that guile is trying to resolve the variable inside the
+			; guile-user module instead of the one we just set to be current. Printing off the
+			; the value of (current-module) shows that the module was successfully set. My best
+			; guess is that this is some sandboxing feature for security because eval is so
+			; dangerous, although why it would silently fail *and* lie to me about what module
+			; I'm in is unclear. Either way, using module-ref here resolves the issue, and the
+			; serialization tests still work in spite of using eval in deserialize, because the
+			; deserialize macro explicitly uses the module of the calling site, and the calling
+			; site is the serialization test module, not this module, because that is where the
+			; test function is defined. This issue caused some frustration, but now I am proud
+			; of the robustness of the serialization module.
+			(unless ((@ (skyler test util) run-tests) (module-ref test-module 'all-tests))
+				(error (format #f "Tests did not pass for module ~s" module-name))))
+			(set! %load-path (cdr %load-path))))))
+
 (define (check module-names)
 	`(lambda* (key: inputs #:allow-other-keys)
-		(for-each (lambda (module-name)
-			(invoke  (string-append (assoc-ref inputs "guile") "/bin/guile") "-c"
-					             (call-with-output-string (lambda (port)
-					             	(write `(begin (use-modules ,module-name) (main)) port)))))
-			',module-names)
-
-		; TODO: Catch the errors thrown by invoke and report the full test results, instead of
-		; stopping after a single failure.
-		))
+		(for-each ,check-runner ',module-names)))
 
 (define guile-search-paths (list
 	(guix.search-path-specification (variable "GUILE_LOAD_PATH")
@@ -85,7 +142,7 @@
 
 					(add-after 'install-documentation 'check
 						#$(check '((skyler r7rs test)
-						           (skyler test)
+						           (skyler serialization test)
 )))))))))
 
 (define guix-code

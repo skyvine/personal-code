@@ -86,18 +86,6 @@
 	      (optional-args (append (map (cute slot->test-args default-value-spec <>)
 	                                 (optional-slots class)))))
 		(map (lambda (slot-combination)
-		     	; logging
-		     	(display "Slot combination:" ((log-port))) (newline ((log-port)))
-		     	(pretty-print slot-combination ((log-port)))
-
-		     	(display "Mandatory args:" ((log-port))) (newline ((log-port)))
-		     	(pretty-print mandatory-args ((log-port)))
-
-		     	(display "All args:" ((log-port))) (newline ((log-port)))
-		     	(pretty-print (append (apply append slot-combination) mandatory-args)
-		     	              ((log-port)))
-
-		     	; implementation
 		     	(apply make class (append (apply append slot-combination) mandatory-args)))
 		     (n-ary-combinations optional-args))))
 

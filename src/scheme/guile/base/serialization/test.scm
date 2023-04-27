@@ -1,4 +1,4 @@
-(define-module (skyler test)
+(define-module (skyler serialization test)
 	#:use-module (ice-9 binary-ports)
 	#:use-module (ice-9 pretty-print)
 	#:use-module (ice-9 textual-ports)
@@ -13,14 +13,25 @@
 
 	#:use-module (skyler serialization)
 
-	#:export (main <simple-class> <complex-class>))
+	#:export (make-serialization-test))
+
+(define* (make-serialization-test name datum key: (print display))
+	(make-test name
+		(define serialized-datum (call-with-output-string (lambda (port)
+		                                                 	(write (serialize datum) port))))
+
+		(define deserialized-datum (call-with-input-string serialized-datum
+		                                                  (lambda (port)
+		                                                  	(deserialize (read port)))))
+
+		(test-assert (print-data-on-fail print equal? datum deserialized-datum))))
 
 ; # Data
 ; Serialization should succeed for every primitive type, that is the types described in
 ; section 3.2 of the r7rs spec, with some exceptions explained inline.
 ;
 ; Additionally, there are guile-specific contstructs which we need to test. Keywords are
-; used extensively in guile, but conspicuously absent from r7rs. Additionally,
+; used extensively in guile, but require SRFI-88 in standard lisp. Additionally,
 ; user-defined GOOPS classes should be serializable so long as they follow the conventions
 ; described in (skyler class-conventions).
 (define-class <simple-class> ()
@@ -50,47 +61,30 @@
 	(equal? (slot-ref lhs 'slot-containing-user-defined-class) 
 	        (slot-ref lhs 'slot-containing-user-defined-class)))
 
-(define example-data `(
-	("Booleans"     . (#f #t))
-	("Bytevectors"  . #vu8(18 15 12 10))
-	;("Characters"  . '(#\a #\escape #\x262E))
-	; EOF N/A       - writing the EOF object doesn't make sense
-	("Null"         . ())
-	("Number"       . 42)
-	("Pair"         . (#t . #\a))
-	; Port N/A      - depends on runtime state
-	; Procedure N/A - too complicated & dangerous, these aren't G-Expressions!
-	("String"       . "Coffee. Now.")
-	; Symbol N/A    - these are typically meant to be evaluated, not stand-alone objects
-	("Vector"       . #(#t #\a))
+(define primitives `(
+	("Boolean True"      . #t)
+	("Boolean False"     . #f)
+	("Bytevectors"       . #vu8(18 15 12 10))
+	("Character Letter"  . #\a)
+	("Character Special" . #\escape)
+	("Character Multi"   . #\x262E)
+	; EOF N/A            - writing the EOF object doesn't make sense
+	("Null"              . ())
+	("Number"            . 42)
+	("Pair"              . (#t . #\a))
+	; Port N/A           - depends on runtime state
+	; Procedure N/A      - too complicated & dangerous, these aren't G-Expressions!
+	("String"            . "Coffee. Now.")
+	; Symbol N/A         - these are typically meant to be evaluated, not stand-alone objects
+	("Vector"            . #(#t #\a))
 
-	("Keyword"       . lockword:)
-	("Simple Class"  . ,(make <simple-class>))
-	("Complex Class" . ,(make <complex-class>))))
+	("Keyword"           . #:lockword)
+	("Simple Class"      . ,(make <simple-class>))
+	("Complex Class"     . ,(make <complex-class>))))
 
-(define (test-example-datum name datum)
-	(define serialized-data (call-with-output-string (lambda (port)
-	                                                 	(write (serialize datum) port))))
+(define (make-primitive-serialization-test pair)
+	(let ((name (car pair))
+				(data (cdr pair)))
+		(make-serialization-test name data)))
 
-	(format ((log-port)) "Serialized data: ~s~%" serialized-data)
-
-	(define deserialized-data (call-with-input-string serialized-data
-	                                                  (lambda (port)
-	                                                  	(deserialize (read port)))))
-		(test-assert (print-data-on-fail display equal? datum deserialized-data)))
-
-(define (test-example-data pair)
-	(lambda ()
-		(let ((name (car pair))
-					(data (cdr pair)))
-			(run-test name (lambda ()
-				(if (and (list? data)
-				         (not (string=? "Null" name)))
-					(map (cute test-example-datum name <>) data)
-					(test-example-datum name data)))))))
-
-(define (main)
-	(let ((tests (map test-example-data example-data)))
-		(unless (apply run-tests tests)
-			(force-output)
-			(exit -1))))
+(define all-tests (map make-primitive-serialization-test primitives))

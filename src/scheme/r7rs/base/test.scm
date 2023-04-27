@@ -65,8 +65,6 @@
 
 	(map test-list nested-lists))
 
-(define (main)
-	(unless (run-tests n-ary-lists flattened-lists)
-		(exit #f)))
+(define all-tests (list n-ary-lists flattened-lists))
 
 ))
