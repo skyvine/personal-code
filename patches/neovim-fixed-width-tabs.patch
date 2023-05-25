@@ -1,0 +1,61 @@
+Historically, tabs have been used to indent to a particular column multiple. For example,
+if the tabstop is 8 and you are on any column from 9-15, you will be indented to column
+16. Ostensibly, this is useful so that you can print out tables that are aligned. In this
+case, I have found tabs to be deficient. There inevitably comes a field with more data
+than the width of the tab, and then the alignment is wrong. It is better to simply
+calculate what width each column needs to be once the data is known.
+
+More to the point, even if tabs are sufficient for this use-case, they have very little to
+do with the work of a text editor. There is a reason that every major project I have
+worked on uses spaces, not tabs, for indentation. Tabs, in their current form, are at best
+neutral and at worst actively harm the maintainability of code.
+
+However, tabs can be legitimately useful. I find code most comfortable to read when
+indentation is 2 spaces wide, but I have spoken with people who find code most comfortable
+with 4 or even more spaces of indentation. Using tabs for indentation allows the user to
+tell the editor how to make the code most comfortable for them, allowing for personalized
+solutions instead of the ubiquitous one-size-fits-all method we use today.
+
+Unfortunately, tabs as they are currently rendered are not suitable for this use. This is
+because the width of a tab will change based on where the code is aligned to (see the
+README for a discussion on the difference between alignment and indentation). This patch
+makes tabs fixed width.
+
+In short, tabs before this patch are at best useless and at worst actively harmful. Tabs
+after this patch are at least theoretically useful in at least one use-case.
+
+diff --git a/src/nvim/indent.c b/src/nvim/indent.c
+index 0f7a5a8e4..12699686e 100644
+--- a/src/nvim/indent.c
++++ b/src/nvim/indent.c
+@@ -102,29 +102,7 @@ bool tabstop_set(char *var, long **array)
+ /// otherwise the value of ts is used.
+ int tabstop_padding(colnr_T col, long ts_arg, long *vts)
+ {
+-  long ts = ts_arg == 0 ? 8 : ts_arg;
+-  colnr_T tabcol = 0;
+-  int t;
+-  long padding = 0;
+-
+-  if (vts == NULL || vts[0] == 0) {
+-    return (int)(ts - (col % ts));
+-  }
+-
+-  const long tabcount = vts[0];
+-
+-  for (t = 1; t <= tabcount; t++) {
+-    tabcol += (colnr_T)vts[t];
+-    if (tabcol > col) {
+-      padding = tabcol - col;
+-      break;
+-    }
+-  }
+-  if (t > tabcount) {
+-    padding = vts[tabcount] - ((col - tabcol) % vts[tabcount]);
+-  }
+-
+-  return (int)padding;
++  return (int)ts_arg;
+ }
+ 
+ /// Find the size of the tab that covers a particular column.

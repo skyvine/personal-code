@@ -11,10 +11,10 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+(read-set! keywords #f)
+
 (define-module (skyler guix pack)
 	#:use-module ((guix profiles)                #:prefix guix.)
-	#:use-module ((skyler guix collections)      #:prefix sky.)
-	#:use-module ((skyler guix packages)         #:prefix sky.)
 
 	#:use-module ((gnu packages admin)           #:prefix guix.)
 	#:use-module ((gnu packages base)            #:prefix guix.)
@@ -28,6 +28,11 @@
 
 	#:export (manifest)
 )
+
+(use-modules (skyler standard)
+	((skyler guix collections)      #:prefix sky.)
+	((skyler guix packages)         #:prefix sky.))
+(read-set! keywords 'postfix)
 
 (define manifest (guix.packages->manifest (list
 	guix.atool

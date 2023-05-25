@@ -84,14 +84,28 @@ linked to the following value(s), due to the meaning of a postfix colon characte
 English prose. Using the default syntax for values avoids this misleading indication.
 
 ## Leading blankspace
-I use tabs for indentation and spaces for alignment. This is advantageous because it
-makes use of a user's tab setting's effectively. When a new line should add an extra
-level of indentation vs aligning with something above it is somewhat arbitrary.
-Generally, I use indentation for scope-related constructs and alignment if there's just a
-long function call.
+I use tabs for indentation and spaces for alignment. This is more taxing for the writer,
+but can be more ergonomic for the reader. The number of spaces that we use for indentation
+is somewhat arbitrary (there is no objectively "correct" answer), and different people
+find different amounts of space more comfortable to read. This indentation, for example
+inside the body of a c function, is a distinct concept from alignment. With alignment,
+there is a correct number of spaces for all readers. If your signature makes the line too
+long, then everyone should see the arguments align:
 
-I will sometimes use indentation to avoid excessively long lines. Not 100% sure this hack
-is OK, but I'm comfortable with it for the moment.
+```c
+int function(int  this,
+             int  is,         // here we want alignment, regardless of indentation size
+             char so,
+             long loooong) {
+	return 3;                   // here we want per-user indentation levels
+}
+
+In the above trivial example tabs and spaces can be used as-is, but in more complicated
+code you could have indentation followed by alignment followed by indentation. In this
+case, the way text editors currently render tabs is not useful because tabs jump to
+particular columns instead of always being the same number of spaces. I use a patched
+version of neovim so that tabs are at least theoretically useful in at least one use-case,
+instead of being at best useless and at worst actively harmful.
 
 ### Alignment
 I err on the side of over-aligning code vs under-aligning it. The primary reason is just

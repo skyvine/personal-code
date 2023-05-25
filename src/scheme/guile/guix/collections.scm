@@ -11,23 +11,21 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+(read-set! keywords #f)
+
 (define-module (skyler guix collections)
 
 	#:use-module (ice-9 optargs)
-	#:use-module (skyler standard)
-
-	;#:use-module ((skyler guix meta)                #:prefix sky.)
-	#:use-module ((skyler guix packages)            #:prefix sky.)
 
 	#:use-module ((gnu packages)                    #:prefix guix.)
 	#:use-module ((gnu services)                    #:prefix guix.)
+	#:use-module ((gnu system accounts)             #:prefix guix.)
 	#:use-module ((gnu system file-systems)         #:prefix guix.)
 	#:use-module ((guix channels)                   #:prefix guix.)
 	#:use-module ((guix config)                     #:prefix guix.)
 	#:use-module ((guix profiles)                   #:prefix guix.)
 	#:use-module ((guix gexp)                       #:prefix guix.)
 	#:use-module ((guix transformations)            #:prefix guix.)
-	#:use-module ((rde gexp)                        #:prefix rde.)
 
 ; package & service modules come last
 	#:use-module ((gnu packages admin)              #:prefix guix.)
@@ -62,6 +60,7 @@
 	#:use-module ((gnu packages rust)               #:prefix guix.)
 	#:use-module ((gnu packages rust-apps)          #:prefix guix.)
 	#:use-module ((gnu packages shells)             #:prefix guix.)
+	#:use-module ((gnu packages terminals)          #:prefix guix.)
 	#:use-module ((gnu packages texinfo)            #:prefix guix.)
 	#:use-module ((gnu packages tmux)               #:prefix guix.)
 	#:use-module ((gnu packages vim)                #:prefix guix.)
@@ -81,6 +80,7 @@
 
 	#:export (
 		essential-packages
+		system-packages
 		luxury-packages
 	
 		global-services
@@ -93,6 +93,9 @@
 		essential-file-systems
 	)
 )
+
+(use-modules (skyler standard) ((skyler guix packages) #:prefix sky.))
+(read-set! keywords 'postfix)
 
 ; Package Collections
 (define essential-packages
@@ -128,7 +131,11 @@
 		(list guix.glib "bin") ; gio
 
 		; emacs is dope but context switching between lisp dialects is paaaaaiiinful
-		guix.neovim
+		; FIXME: stop using absolute paths local to your system you monster!
+		((guix.options->transformation
+			'((with-patch . "neovim=/home/skyler/Projects/personal-code/patches/neovim-fixed-width-tabs.patch"))) ;%%patches share/patches/neovim-fixed-width-tabs.patch%%")))
+			guix.neovim)
+
 		sky.vim-solarized8
 
 		;; I'm not sure if we have enough compression algorithms yet
@@ -143,17 +150,8 @@
 		guix.atool
 		guix.coreutils
 		guix.diffutils
-		guix.e2fsprogs
-
-		guix.inetutils ; server & client, but also ping & traceroute
-		guix.iproute
-		guix.isc-dhcp ; dhcp client
-		guix.ncurses ; required to clear the screen
-		guix.network-manager
-		guix.procps ; ps command
 		guix.tmux
 		guix.wget
-		guix.which
 
 		;;; contains fuser which IIUC has been critical in the rare instances where some
 		;;; hardware locked up resource is
@@ -163,30 +161,51 @@
 		;;; the +udev adds eudev as a dependency to util-linux
 		guix.util-linux+udev
 
+		; Need Consideration
+		;; misc stuff I've accrued over the years
+		guix.git
+		guix.ispell
+		guix.kbd ; keyboard tools
+		guix.less
+		guix.man-pages ; linux & c man pages
+		guix.nss-certs ; required for https
+		guix.the-silver-searcher
+		guix.tree
+		guix.w3m
+		))
+
+(define system-packages (list
+		guix.glibc-locales
+
+		; Acceptable for Inclusion
+		;; kernel stuff
+		guix.eudev ; sets up /dev directory; eudev is the gentoo fork of plain udev
+		guix.kmod ; kernel module utils: modprobe, etc
+
+		; New Versions Needed (possibly promote to harmonization)
+		guix.e2fsprogs
+
+		guix.inetutils ; server & client, but also ping & traceroute
+		guix.iproute
+		guix.isc-dhcp ; dhcp client
+		guix.ncurses ; required to clear the screen
+		guix.network-manager
+		guix.procps ; ps command
+		guix.which
+
 		; Deprecation
 		guix.iw ; iw command, maybe replacable by network-manager?
 		guix.wireless-tools ; deprecated wireless commands, maybe replacable by network-manager?
 
 		; Need Consideration
 		guix.shadow
+		guix.sudo
 
 		;; from %base-packages-linux
 		guix.pciutils ; pci is the port for peripherals like gfx card
 		guix.usbutils
 
-		;; misc stuff I've accrued over the years
-		guix.git
-		guix.glibc-locales
-		guix.ispell
-		guix.kbd ; keyboard tools
-		guix.less
-		guix.man-pages ; linux & c man pages
-		guix.nss-certs ; required for https
-		guix.sudo
-		guix.the-silver-searcher
-		guix.tree
-		guix.w3m
-		))
+))
 
 (define luxury-packages (list
 	guix.emacs
@@ -210,11 +229,10 @@
 	(guix.service guix.nscd-service-type) ; name service cache daemon, for passwords, groups, and hosts
 	(guix.simple-service 'mtp guix.udev-service-type (list guix.libmtp)) ; Media Transfer Protocol
 	(guix.service guix.upower-service-type) ; power monitoring, inc. battery status
-	(guix.service guix.elogind-service-type) ; power mgmt: suspend, reboot, etc; also info about active user sessions
 	(guix.service guix.ntp-service-type) ; Network Time Protocol
 
 	(guix.service guix.special-files-service-type
-		`(("/bin/sh" ,(guix.file-append guix.dash "/bin/dash"))
+		`(("/bin/sh" ,(guix.file-append guix.dash "/bin/dash")) ; snowflaking FTW
 		  ("/usr/bin/env",(guix.file-append guix.coreutils "/bin/env"))
 	))
 
@@ -253,21 +271,24 @@
 	))))
 ))
 
-(define minimal-services (list
+(define (minimal-services keyboard-layout) (cons
 	(guix.service guix.login-service-type
-		(guix.login-configuration (allow-empty-passwords? #t)))
-	(guix.service guix.kmscon-service-type
-		(guix.kmscon-configuration
-			(virtual-terminal "tty1")
-			(login-program (guix.file-append guix.shadow "/bin/login"))))
-))
+	              (guix.login-configuration (allow-empty-passwords? #t)))
+	(map (lambda (tty-number)
+		(guix.service guix.kmscon-service-type
+			(guix.kmscon-configuration
+				(virtual-terminal (string-append "tty" tty-number))
+				(login-program    (guix.file-append guix.shadow "/bin/login"))
+				(keyboard-layout  keyboard-layout)
+				)))
+	'("1" "2" "3" "4" "5" "6")
+)))
 
 (define (luxury-services keyboard-layout) (list
 	; for use on, for example, a full install to a laptop
 	(guix.service guix.gdm-service-type)
 	(guix.service guix.gnome-desktop-service-type)
-	(guix.set-xorg-configuration
-		(guix.xorg-configuration (keyboard-layout keyboard-layout)))
+	(guix.set-xorg-configuration (guix.xorg-configuration (keyboard-layout keyboard-layout)))
 	guix.gdm-file-system-service ; enhances Gnome Display Manager performance w/ cache
 	guix.fontconfig-file-system-service ; compatibility service for fontconfig on guix
 
@@ -309,12 +330,52 @@
 ))))
 
 ; File System Collections
-(define essential-file-systems (cons
-	(guix.file-system
-		(device "tmpfs")
-		(mount-point "/tmp")
-		(type "tmpfs")
-		(check? #f)
-		(options "mode=0777")
-		(create-mount-point? #t))
+(define (get-gid-by-name name groups)
+	(let ((matches (filter (lambda (group) (string=? (guix.user-group-name group)) name)
+												 groups)))
+		(if (>= (length matches) 1)
+			(guix.user-group-id (car matches))
+			(error (string-append "The group " name " must have an explicitly defined GID!"
+														" Add a (gid <number>) form to the group definition (and"
+														" probably add a (groups (user-group ...)) form to the"
+														" operating-system definition")))))
+
+(define (get-user-gid user groups)
+	(unless (guix.user-account-group user)
+		(error (string-append "The user " (guix.user-account-name user)
+		                      " must have an explicitly defined group! Add"
+		                      " (group <name|number>) to the user definition.")))
+
+	(let ((gid (if (number? (guix.user-account-group user))
+	           	(guix.user-account-group user)
+	           	(get-gid-by-name (guix.user-account-group user) groups))))
+		(number->string gid)))
+
+(define (get-user-uid user)
+	(unless (guix.user-account-uid user)
+		(error (string-append "The user " (guix.user-account-name user)
+		                      " must have an explicitly defined UID! Add (uid <number>) to"
+		                      " the user definition.")))
+	(number->string (guix.user-account-uid user)))
+
+(define (essential-file-systems users groups) (append
+	(list
+		(guix.file-system
+			(device              "tmpfs")
+			(mount-point         "/tmp")
+			(type                "tmpfs")
+			(check?              #f)
+			(options             "mode=0777")
+			(create-mount-point? #t)))
+	(map (lambda (user)
+		(let ((uid (get-user-uid user))
+		      (gid (get-user-gid user groups)))
+			(guix.file-system
+				(device              "tmpfs")
+				(mount-point         (string-append "/run/user/" uid))
+				(type                "tmpfs")
+				(check?              #f)
+				(options             (format #f "mode=0700,uid=~a,gid=~a" uid gid))
+				(create-mount-point? #t))))
+		(filter (lambda (u) (not (guix.user-account-system? u))) users))
 	guix.%base-file-systems))

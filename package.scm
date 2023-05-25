@@ -18,6 +18,7 @@
 	(srfi srfi-88)
 
 	((guix build-system channel)       #:prefix guix.)
+	((guix build-system copy)          #:prefix guix.)
 	((guix build-system gnu)           #:prefix guix.)
 	((guix build-system guile)         #:prefix guix.)
 	((guix build-system trivial)       #:prefix guix.)
@@ -25,10 +26,10 @@
 	((guix describe)                   #:prefix guix.)
 	((guix gexp)                       #:prefix guix.)
 	((guix packages)                   #:prefix guix.)
+	((gnu packages base)               #:prefix guix.)
 	((gnu packages gnupg)              #:prefix guix.)
 	((gnu packages guile)              #:prefix guix.)
 	((gnu packages package-management) #:prefix guix.)
-	((rde packages)                    #:prefix rde.)
 )
 
 (define version "0.0")
@@ -108,6 +109,22 @@
 	(guix.search-path-specification (variable "GUILE_LOAD_COMPILED_PATH")
 	                                (files (list "share/guile/3.0/site-ccache")))))
 
+(define patches (let ((patches-dir (guix.local-file "patches" recursive?: #t)))
+	(guix.package
+		(name        "patches")
+		(version     version)
+		(source      #f)
+		(description #f)
+		(synopsis    #f)
+		(home-page   #f)
+		(license     #f)
+
+		(build-system guix.copy-build-system)
+		(arguments (list
+			phases: '(modify-phases (@ (guix build copy-build-system) %standard-phases)
+			        	(delete 'unpack))
+			install-plan: #~(list (list #$patches-dir "share/patches")))))))
+
 (define base-guile-code
 	(let ((guile-src (guix.local-file "src/scheme/guile/base" recursive?: #t))
 	      (r7rs-src  (guix.local-file "src/scheme/r7rs/base" recursive?: #t)))
@@ -143,7 +160,8 @@
 					(add-after 'install-documentation 'check
 						#$(check '((skyler r7rs test)
 						           (skyler serialization test)
-)))))))))
+					)))
+))))))
 
 (define guix-code
 	(let ((guix-code (guix.local-file "src/scheme/guile/guix" recursive?: #t)))
@@ -158,13 +176,14 @@
 
 			(build-system        guix.guile-build-system)
 			(native-search-paths guile-search-paths)
-			(native-inputs       (list guix.guile-3.0-latest))
+			(native-inputs       (list guix.guile-3.0-latest guix.glibc-locales))
 
 			; need to propagate because we're not compiling, see also the note on the
 			; not-compiled-file-regexp: argument
 			(propagated-inputs (list
 				guix.guile-gcrypt
 				base-guile-code
+				patches
 			))
 
 			(arguments (list
@@ -178,7 +197,10 @@
 						; module structure inside an actual implementation
 						(lambda* (key: inputs #:allow-other-keys)
 							(use-modules (guix build utils))
-							(copy-recursively #$guix-code "./skyler/guix")))))))))
+							(copy-recursively #$guix-code "./skyler/guix")))
+
+					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
+
 
 (define make.scm
 	(let ((src (local-file "src/bin/make.scm")))

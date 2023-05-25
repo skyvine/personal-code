@@ -11,10 +11,10 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+(read-set! keywords #f)
+
 (define-module (skyler guix packages)
 	#:use-module (guix gexp)
-
-	#:use-module ((skyler guix utils)      #:prefix sky.)
 
 	#:use-module ((guix build-system copy) #:prefix guix.)
 	#:use-module ((guix git-download)      #:prefix guix.)
@@ -26,6 +26,10 @@
 
 	#:export (vim-solarized8)
 )
+
+(use-modules (skyler standard))
+(read-set! keywords 'postfix)
+
 
 (define vim-solarized8
 	(let ((version "1.4.0"))

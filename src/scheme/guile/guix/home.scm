@@ -11,8 +11,11 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+(read-set! keywords #f)
+
 (define-module (skyler guix home)
-	#:use-module (skyler r7rs standard)
+							 #:use-module (guix gexp)
+							 #:use-module (gnu packages music)
 
 	#:use-module ((gnu)                      #:prefix guix.)
 	#:use-module ((gnu home)                 #:prefix guix.)
@@ -21,15 +24,20 @@
 	#:use-module ((guix packages)            #:prefix guix.)
 
 	#:use-module ((gnu home services shells) #:prefix guix.)
-	#:use-module ((gnu home-services emacs)  #:prefix rde.)
-	#:use-module ((gnu home-services-utils)  #:prefix rde.)
 
-	#:use-module ((gnu packages emacs)       #:prefix guix.)
-	#:use-module ((skyler guix utils)        #:prefix sky.)
-	#:use-module ((skyler guix collections)  #:prefix sky.)
+	#:use-module ((gnu packages shells)      #:prefix guix.)
+	#:use-module ((gnu packages code)        #:prefix guix.)
+	#:use-module ((gnu packages admin)       #:prefix guix.)
 
 	#:export (home)
 	)
+
+(use-modules (skyler standard)
+						 ((skyler guix utils)        #:prefix sky.)
+						 ((skyler guix packages)        #:prefix sky.)
+             ((skyler guix collections)  #:prefix sky.))
+
+(read-set! keywords 'postfix)
 
 (define (path-append name . paths)
 	(cons name (format #f "${~a:+$~a:}~a"
@@ -41,7 +49,7 @@
 
 (define home
 	(guix.home-environment
-		(packages (append sky.luxury-packages))
+		(packages sky.essential-packages)
 		(services (list
 			(guix.service guix.home-bash-service-type
 				(guix.home-bash-configuration (guix-defaults? #t)))
@@ -55,6 +63,6 @@
 				      (path-append "GUILE_LOAD_PATH" "$HOME/.guix-profile/share/guile/site/3.0")
 
 				      (path-append "GUILE_LOAD_COMPILED_PATH"
-				                   "$HOME/.guix-profile/lib/guile/3.0/site-ccache")
-			))
-))))
+				                   "$HOME/.guix-profile/lib/guile/3.0/site-ccache")))))))
+
+home

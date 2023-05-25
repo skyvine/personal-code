@@ -11,6 +11,8 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+(read-set! keywords #f)
+
 (define-module (skyler guix utils)
 	#:use-module (ice-9 optargs)
 
@@ -18,10 +20,12 @@
 	#:use-module ((guix gexp)                 #:prefix guix.)
 	#:use-module ((guix packages)             #:prefix guix.)
 	#:use-module ((gnu packages haskell-xyz)  #:prefix guix.)
-	#:use-module ((gnu packages tex)          #:prefix guix.)
 
 	#:export (local-package)
 )
+(read-set! keywords 'postfix)
+
+(use-modules (skyler standard))
 
 (define* (local-package key:
                         name
