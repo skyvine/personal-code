@@ -94,7 +94,10 @@
 	)
 )
 
-(use-modules (skyler standard) ((skyler guix packages) #:prefix sky.))
+(use-modules (skyler standard)
+             ((skyler guix packages) #:prefix sky.)
+             ((skyler guix services) #:prefix sky.))
+
 (read-set! keywords 'postfix)
 
 ; Package Collections
@@ -271,18 +274,18 @@
 	))))
 ))
 
-(define (minimal-services keyboard-layout) (cons
+(define (minimal-services keyboard-layout) (cons*
 	(guix.service guix.login-service-type
 	              (guix.login-configuration (allow-empty-passwords? #t)))
-	(map (lambda (tty-number)
-		(guix.service guix.kmscon-service-type
-			(guix.kmscon-configuration
-				(virtual-terminal (string-append "tty" tty-number))
-				(login-program    (guix.file-append guix.shadow "/bin/login"))
-				(keyboard-layout  keyboard-layout)
-				)))
-	'("1" "2" "3" "4" "5" "6")
-)))
+	(map (lambda (tty)
+		(guix.service sky.kmscon-with-configurable-resolution-service-type
+			(sky.kmscon-with-configurable-resolution-configuration
+				(virtual-terminal  (string-append "tty" (number->string tty)))
+				(screen-resolution (cons 1920 1080))
+				(login-program     (guix.file-append guix.shadow "/bin/login"))
+				(keyboard-layout   keyboard-layout))))
+		'(1 2 3 4 5 6 7 8 9))
+))
 
 (define (luxury-services keyboard-layout) (list
 	; for use on, for example, a full install to a laptop

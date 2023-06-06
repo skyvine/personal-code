@@ -17,6 +17,7 @@
 	#:use-module ((gnu bootloader)          #:prefix guix.)
 	#:use-module ((gnu bootloader grub)     #:prefix guix.)
 	#:use-module ((gnu services)            #:prefix guix.)
+	#:use-module ((gnu services base)       #:prefix guix.)
 	#:use-module ((gnu services ssh)        #:prefix guix.)
 	#:use-module ((gnu system)              #:prefix guix.)
 	#:use-module ((gnu system accounts)     #:prefix guix.)
@@ -24,6 +25,7 @@
 	#:use-module ((gnu system keyboard)     #:prefix guix.)
 	#:use-module ((gnu system shadow)       #:prefix guix.)
 	#:use-module ((guix gexp)               #:prefix guix.)
+	#:use-module ((guix gexp)               #:select (gexp))
 
 	#:use-module ((gnu packages guile)  #:prefix guix.) ; for setting my default "shell"
 	#:use-module ((gnu packages shells) #:prefix guix.) ; for setting my default shell
@@ -44,6 +46,7 @@
 
 		(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
 		                                           (targets '("/dev/xvda"))))
+		(kernel-arguments (cons "video=1920x1080" guix.%default-kernel-arguments))
 
 		(keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape")))
 		(users (cons*
@@ -69,14 +72,16 @@
 
 		(packages (append sky.essential-packages sky.system-packages))
 
-		(services (append sky.global-services
-		                  (list (guix.service guix.openssh-service-type
-		                                      (guix.openssh-configuration
-		                                        (password-authentication? #f)
-		                                        (use-pam? #f))))
-		                  (sky.minimal-services keyboard-layout)
-		                  (sky.qubes-networking-services ip:          ip
-		                                                 virtual-dns: virtual-dns)))))
+		(services (append
+			sky.global-services
+			(list
+				(guix.service guix.openssh-service-type
+					(guix.openssh-configuration
+					(password-authentication? #f)
+					(use-pam? #f))))
+			(sky.minimal-services keyboard-layout)
+			(sky.qubes-networking-services ip:          ip
+			                               virtual-dns: virtual-dns)))))
 
 (define portable-system (guix.operating-system
 	(host-name "raccoon")
@@ -87,6 +92,7 @@
 	(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
 	                                           (targets '("/dev/sda"))))
 
+	(keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape")))
 	(users (list
 		(guix.user-account
 			(name "sly-cooper")
@@ -116,5 +122,3 @@
 	))
 
 	(packages sky.essential-packages)))
-
-portable-system

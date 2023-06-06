@@ -21,15 +21,20 @@
 	#:use-module ((guix gexp)              #:prefix guix.)
 	#:use-module ((guix packages)          #:prefix guix.)
 	#:use-module ((guix licenses)          #:prefix license.)
+	#:use-module ((guix transformations)   #:prefix guix.)
+	#:use-module ((guix utils)             #:prefix guix.)
 
-	#:use-module ((gnu packages guile)     #:prefix guix.)
+	#:use-module ((gnu packages terminals) #:prefix guix.)
 
-	#:export (vim-solarized8)
+	#:export (kmscon-with-configurable-resolution vim-solarized8)
 )
 
 (use-modules (skyler standard))
 (read-set! keywords 'postfix)
 
+(define kmscon-with-configurable-resolution
+	((guix.options->transformation '((with-patch . "kmscon=/home/skyler/Projects/personal-code/patches/kmscon-configurable-resolution.patch")))
+	                               guix.kmscon))
 
 (define vim-solarized8
 	(let ((version "1.4.0"))
