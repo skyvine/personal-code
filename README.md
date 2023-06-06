@@ -99,6 +99,7 @@ int function(int  this,
              long loooong) {
 	return 3;                   // here we want per-user indentation levels
 }
+```
 
 In the above trivial example tabs and spaces can be used as-is, but in more complicated
 code you could have indentation followed by alignment followed by indentation. In this
