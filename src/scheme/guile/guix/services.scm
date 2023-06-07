@@ -1,3 +1,55 @@
+; Copyright © 2013-2023 Ludovic Courtès <ludo@gnu.org>
+; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
+; Copyright © 2015, 2016, 2020 Mark H Weaver <mhw@netris.org>
+; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
+; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
+; Copyright © 2016 David Craven <david@craven.ch>
+; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
+; Copyright © 2018 Mathieu Othacehe <m.othacehe@gmail.com>
+; Copyright © 2019 Efraim Flashner <efraim@flashner.co.il>
+; Copyright © 2019 Tobias Geerinckx-Rice <me@tobias.gr>
+; Copyright © 2019 John Soo <jsoo1@asu.edu>
+; Copyright © 2019 Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+; Copyright © 2020 Florian Pelz <pelzflorian@pelzflorian.de>
+; Copyright © 2020, 2021 Brice Waegeneire <brice@waegenei.re>
+; Copyright © 2021 qblade <qblade@protonmail.com>
+; Copyright © 2021 Hui Lu <luhuins@163.com>
+; Copyright © 2021, 2022, 2023 Maxim Cournoyer <maxim.cournoyer@gmail.com>
+; Copyright © 2021 muradm <mail@muradm.net>
+; Copyright © 2022 Guillaume Le Vaillant <glv@posteo.net>
+; Copyright © 2022 Justin Veilleux <terramorpha@cock.li>
+; Copyright © 2022 ( <paren@disroot.org>
+; Copyright © 2023 Bruno Victal <mirai@makinata.eu>
+; Copyright © 2023 Skyler Ferris <skyvine@protonmail.com>
+;
+; This program is free software; you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 3 of the License, or (at
+; your option) any later version.
+;
+; This program is distributed in the hope that it will be useful, but
+; WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+; Some notes on the legal-ese:
+; This file is basically just a copy of some code in the Guix repository,
+; tweaked to support the configurable screen resolution patch for kmscon.
+; I copied all of the copyright notices from that file
+; (gnu/services/base.scm, commit 77f52db416a13e195d090cad4e9e7658feb2e86b) 
+; to be a safe.
+;
+; Additionally, most of the code in this repository is licensed under the
+; AGPL because that is my preferred default. However, Guix is licensed
+; under the plain GPL. I am retaining their license for this file. If I
+; understand correctly, it would be compatible to mark this file as AGPL
+; because of clause 13 of the GPL (I am not a lawyer), but since I only
+; made a small tweak I think it is better to be respectful of their
+; licensing decision.
+
 (define-module (skyler guix services)
 	#:use-module (gnu packages fonts)
 	#:use-module (gnu packages terminals)

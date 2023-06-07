@@ -3,15 +3,19 @@ This code is for my personal machine. My main concern with my machine is having 
 programming interface. This means that I should be able to accomplish everything in my
 day-to-day with guile, dropping into C\* where appropriate.
 
-* I really like rust too, but it seems tricky to integrate Rust with Guile as deeply as
-  C already is. On the table though.
+\* I really like rust too, but it seems tricky to integrate Rust with Guile as deeply as
+C already is. On the table though.
 
 # License
-All sofware in this repository is licensed under the Affero GNU Public License, version 3
-or any later version.
+Most of the sofware in this repository is licensed under the Affero GNU Public License,
+version 3 or any later version.
 
 I default to using the AGPL 3 or later unless there is a strong reason to downgrade to the
-plain GPL or the LGPL. Non-GNU licenses are off the table.
+plain GPL or the LGPL. Some individual files may use different (AGPL-compatible) licenses
+if the source code is mostly borrowed from another project. The top of every source file
+should have language specifying its license; if you find any file is missing this lanugage
+please [open an bug](https://todo.sr.ht/~skyvine/personal-code) and I will remediate the
+situation as quickly as possible.
 
 [The FSF has published advice on license selection.](https://www.gnu.org/licenses/license-recommendations.html)
 I generally agree with this advice, except that they recommend using the AGPL only when it
@@ -40,8 +44,7 @@ For example, there is a `(skyler standard)` module which contains routines that 
 to be always available. The one written in R7RS makes sense regardless of implementation,
 while the one written in GNU Guile uses Guile-specific features, and re-exports everything
 from the R7RS version of the module. The other exception is the `base` project, which
-contains code that should be installed to the root of the namespace (currently, this is
-only the aforementioned `standard.scm`).
+contains code that should be installed to the root of the namespace.
 
 # Notes: Style and other decisions
 This is not exhaustive or definitive. I feel the need to justify some of my decisions
