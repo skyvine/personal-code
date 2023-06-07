@@ -24,9 +24,11 @@
 	#:use-module ((guix transformations)   #:prefix guix.)
 	#:use-module ((guix utils)             #:prefix guix.)
 
+	#:use-module ((gnu packages autotools) #:prefix guix.)
+	#:use-module ((gnu packages guile-xyz) #:prefix guix.)
 	#:use-module ((gnu packages terminals) #:prefix guix.)
 
-	#:export (kmscon-with-configurable-resolution vim-solarized8)
+	#:export (haunt-0.3.0 kmscon-with-configurable-resolution vim-solarized8)
 )
 
 (use-modules (skyler standard))
@@ -35,6 +37,20 @@
 (define kmscon-with-configurable-resolution
 	((guix.options->transformation '((with-patch . "kmscon=/home/skyler/Projects/personal-code/patches/kmscon-configurable-resolution.patch")))
 	                               guix.kmscon))
+
+(define haunt-0.3.0 (guix.package
+	(inherit guix.haunt)
+	(name "haunt-0.3.0")
+	(version "0.3.0")
+	(native-inputs (guix.modify-inputs (guix.package-native-inputs guix.haunt)
+	                                   (guix.prepend guix.autoconf guix.automake)))
+	(source (guix.origin
+		(method guix.git-fetch)
+		(uri (guix.git-reference
+			(url "https://git.dthompson.us/haunt.git")
+			(commit "d7cac9e175082829ebfd31185bc3811575f2deb5")))
+		(file-name (guix.git-file-name name version))
+		(sha256 (guix.base32 "1w703ic2pvjcfy3541a206iz5iljxpynvp21dcr6ls8mxzfk7g3x"))))))
 
 (define vim-solarized8
 	(let ((version "1.4.0"))
