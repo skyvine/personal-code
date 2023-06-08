@@ -65,7 +65,7 @@ The default syntax is needed in `define-module` declarations to prevent an error
 the reader option has not been set until *after* the `define-module` form has been
 evaluated (the postfix syntax works in some cases, the reader is global state).
 
-Otherwise, keywords use the default syntax when they are valued and the postfix syntax
+Otherwise, keywords use the default syntax when they are values and the postfix syntax
 when they are labels (eg, keyword arguments to a define\* function). This is illustrated
 simply in a GOOPS class declaration:
 
@@ -83,8 +83,9 @@ And can also be seen in a define\* declaration:
 ```
 
 Using the postfix syntax for labels indicates to the reader that the keyword is directly
-linked to the following value(s), due to the meaning of a postfix colon character in
-English prose. Using the default syntax for values avoids this misleading indication.
+linked to the following value(s), due to the usage of postfix colons in the popular Python
+programming language as well as the meaning of a postfix colon character in English prose.
+Using the default syntax for values avoids this misleading indication.
 
 ## Leading blankspace
 I use tabs for indentation and spaces for alignment. This is more taxing for the writer,
@@ -153,9 +154,10 @@ licences module I use the `license.` prefix for consistency.
 
 It is common to use a colon for namespacing in scheme, but this causes confusion with
 keywords that use the postfix syntax. First, it can confuse syntax highlighting when
-referencing members unless care is taken to look ahead. Second, in the `#:prefix` form,
-the syntax is indistinguishable to the point that in some cases guile will throw an error
-because the argument is read as a keyword, and #:prefix must be given a symbol.
+referencing members unless care is taken to look ahead. Second, when the prefix is
+actually set in the `use-modules` or `define-module` form, the syntax is indistinguishable
+to the point that cases guile will throw an error because the argument is read as a
+keyword, and #:prefix must be given a symbol.
 
 Most imports use a prefix. The main exceptions are `(skyler standard)` and anything that
 is importand from the language or the implementation's standard libraries. Other
