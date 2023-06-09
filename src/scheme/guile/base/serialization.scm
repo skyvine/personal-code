@@ -11,6 +11,12 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; NOTE: It is recommended that downstream projects test that any custom data structures
+;       define are compatible with this system, particularly if they contain custom
+;       serialization code. The test submodule exports a function which eases the process
+;       of writing these tests.
+;
 ; This serialization module leans into lisp's ambiguity between code and data. Broadly,
 ; it deals with 3 categories of data:
 ;

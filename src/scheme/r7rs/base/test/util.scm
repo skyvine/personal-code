@@ -11,6 +11,9 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; Miscellaneous utilities useful for defining tests.
+
 (define-library (skyler r7rs test util)
 
 (import
@@ -22,17 +25,71 @@
 
 (export
 	define-test
+	; Macro Signature: (define-test code-name human-name exp exp* ...)
+	;
+	; Creates a test and binds the result to the symbol provided in the `code-name`
+	; argument. The return value is undefined. See the `make-test` documentation for
+	; additional details.
+	;
+	; This is comparable to the built-in (define (lambda-name name) exp exp* ...) for making
+	; a lambda and binding the result to a symbol.
+
 	make-test
+	; Macro Signature: (make-test human-name exp exp* ...)
+	;
+	; Arguments:
+	; human-name: A human-readable string naming the test.
+	;
+	; exp exp* ...: The code that runs the test. This is comparable to the built-in
+	;               (lambda (args) exp exp* ...) for making a callable object, but with some
+	;               additional constraints and feature described below.
+	;
+	; Returns:
+	; A thunk which runs the given code as an srfi-64 test. In particular, it handles
+	; calling `test-begin` and `test-end`, and handles any exception that the code might
+	; throw to make sure the information is logged and the test suite runs to completion.
+	; The thunk will return true if the test passes, false otherwise. The logic assumes
+	; that the test runner is the default runner supplied by Guile.
+
 	run-tests
+	; Signature: (run-tests tests)
+	;
+	; Arguments:
+	; tests: A list of tests, as created by make-test
+	;
+	; Returns:
+	; True if all of the tests pass, false otherwise. All tests will run to completion (if
+	; possible) even if some tests fail.
 
 	log-port
+	; Signature: (log-port)
+	;
+	; Returns:
+	; The port that the srfi-64 test suite is currently using to log test results. This
+	; logic assumes that the test runner is the default runner supplied by Guile.
+
 	print-data-on-fail
+	; Signature: (print-data-on-fail print cmp lhs rhs)
+	;
+	; Arguments:
+	; print: A 2-argument function used to print the data in the event that the comparison
+	;        fails. The first argument is the datum (lhs or rhs) and the second argument is
+	;        theport to write to. The standard `write` is a fine option in many cases.
+	;
+	; cmp: A 2-argument predicate used to test whether lhs and rhs are equal. If this
+	;      returns false, the function will consider this a failure state and print the
+	;      data.
+	;
+	; lhs, rhs: The data being compared
+	;
+	; Returns:
+	; #t if (cmp lhs rhs) returns a truthy value, #f otherwise.
 )
 
 (begin
 
 (define log-port
-	; This paramater contains a thunk that will return an output port to use for logging.
+	; This parameter contains a thunk that will return an output port to use for logging.
 	; Because this is a parameter which returns a thunk, you need to use 2 sets of
 	; parentheses in order to actually get the port: `((log-port))`
 

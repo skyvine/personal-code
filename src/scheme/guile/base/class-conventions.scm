@@ -60,6 +60,36 @@
 ; possible for extensions to collaborate in unforseen ways through this mechanism as well.
 ; The paper focuses on representing source code for IDE tools, but the analysis seems
 ; generally applicable.
+;
+; # Integrated Example
+;
+; A class which defines the core data structure of a notification in a general computing
+; system might be defined like this:
+;
+; ```scm
+; (define-class <work-block> ()
+; 	(task-id    init-keyword: #:task-id
+; 	            accessor:     task-id)
+; 
+; 	(start-time init-keyword: #:start-time
+; 	            accessor:     start-time)
+; 
+; 	(end-time   init-keyword: #:end-time
+; 	            init-form:    #f
+; 	            accessor:     end-time)
+; 
+; 	(user-data  init-keyword: #:user-data
+; 	            init-thunk:   make-hash-table))
+; 
+; (define user-data-slot )
+; 
+; (define user-data
+; 	(make-user-data-accessor (class-slot-definition <work-block> 'user-data)))
+; 
+; (define-method (initialize (obj <work-block>) initargs)
+; 	(next-method)
+; 	(ensure-all-slots-are-bound obj))
+; ```
 
 (define-module (skyler class-conventions)
 	#:use-module (oop goops)
@@ -176,7 +206,7 @@
 	          ; #f otherwise.
 ))
 
-; Both `unbound?` and `has-default-value?` leak (oop goops) implementation details.
+; FIXME: Both `unbound?` and `has-default-value?` leak (oop goops) implementation details.
 
 (define unbound? (@@ (oop goops) unbound?))
 

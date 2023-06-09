@@ -60,11 +60,16 @@
 
 	#:use-module (skyler guix packages)
 
-	#:export (kmscon-with-configurable-resolution-service-type kmscon-with-configurable-resolution-configuration)
-	)
+	#:export (
+		kmscon-with-configurable-resolution-service-type
+		kmscon-with-configurable-resolution-configuration)
+		; These work just like Guix's kmscon-service-type and kmscon-configuration, except
+		; that they also recognize the (screen-resolution (width . height)) option. Will
+		; upstream if the patch is acceptable to Aetf or includable with guix directly.
+)
 
 (define-record-type* <kmscon-with-configurable-resolution-configuration>
-  kmscon-with-configurable-resolution-configuration     make-kmscon-with-configurable-resolution-configuration
+  kmscon-with-configurable-resolution-configuration make-kmscon-with-configurable-resolution-configuration
   kmscon-with-configurable-resolution-configuration?
   (kmscon                  kmscon-with-configurable-resolution-configuration-kmscon
                            (default kmscon-with-configurable-resolution))

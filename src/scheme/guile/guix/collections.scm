@@ -11,6 +11,26 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; This module defines groups of packages, services, and other operating-system inputs
+; make it easier to sync common changes between different types of systems. I do not
+; directly rely on any of the collections define in guix (for example, %base-services)
+; because the process of stripping down the system to a bare minimum, converting it into
+; a lisp machine, and rebuilding it as a lisp machine will require that I examine each
+; member in detail anway. So in addition to keeping changes synced, this file serves as
+; a todo list.
+;
+; # Ramblings about reasoning & intentions for lisp machine
+; Essential components are guile and/or rust. Both of these languages speak to me, but
+; they are not harmonized with each other. Harmonization seems difficult because guile is
+; closely married to c already, but would minimize duplicate work. In favor of guile alone
+; is all the work that has gone into the VM, the existence of guix, the beginning of a
+; scsh implementation, deep integration with unix, and commitment to *free* software. In
+; favor of rust alone is the shockingly effective integration of high-level concepts into
+; a systems language without sacrificing the raw power of c and the macro system that
+; actually just lets you program the compiler which is the objectively correct way to do
+; macros (the convenience forms of macros, eg macro_rules!, are fine as an addition).
+
 (read-set! keywords #f)
 
 (define-module (skyler guix collections)
@@ -80,19 +100,72 @@
 
 	#:export (
 		essential-packages
+		; A list of packages which should exist on every machine, including hyper-minimal
+		; machines such as routers.
+
 		system-packages
+		; A list of packages which should be included in the operating-system definition and
+		; excluded from any home definitions for correct functioning. For example, the shadow
+		; package contains the `su` binary and it will (thankfully) not work properly if it
+		; is installed as a user package.
+
 		luxury-packages
-	
+		; A list of packages which does not conform to lisp machine expectations, but are
+		; practical for doing things at the moment.
+
 		global-services
+		; A list of services which should exist on every machine, including hyper-minimal
+		; machines such as routers.
+
 		minimal-services
+		; Signature (minimal-services keyboard-layout)
+		;
+		; Arguments:
+		; keyboard-layout: The layout that is used by default on the system.
+		;
+		; Returns:
+		; A list of services which are used on minimalist machines intended for interactive
+		; use.
+
 		luxury-services
-	
+		; Signature (luxury-services keyboard-layout)
+		;
+		; Arguments:
+		; keyboard-layout: The layout that is used by default on the system.
+		;
+		; Returns:
+		; A list of services which are used on traditional interactive machines.
+
 		normal-networking-services
+		; A list of networking services that enable networking in traditional environments.
+
 		qubes-networking-services
-	
+		; Signature: (qubes-networking-services ip virtual-dns)
+		;
+		; Arguments:
+		; ip: A string containing the IP address assigned to the Qube by Guix. Must contain
+		;     the netmask using slash notation.
+		;
+		; virtual-dns: A list of IP addresses that are used as DNS servers. Please use the
+		;              ones listed in the Qubes settings, not external DNS servers.
+
 		essential-file-systems
-	)
-)
+		; Signature: (essential-file-systems users groups)
+		;
+		; Arguments:
+		; users: The list of users installed on the target operating-system
+		;
+		; groups: The list of groups installed on the target operating-system
+		;
+		; Returns:
+		; A list of filesystems that should be included in an operating system definition.
+		; This exists mostly because XDG_RUNTIME_DIR is typically created by some init script
+		; in a desktop environment, and guix can run into problems if this directory does
+		; not exist. This need is why the users and groups must be passed in, and
+		; unfortunately this implementation which declares the directories instead of creating
+		; them imperatively imposes the requirement that UIDs and GIDs are declared explicitly
+		; (if they are not explicitly declared, then these are also created imperatively).
+))
 
 (use-modules (skyler standard)
              ((skyler guix packages) #:prefix sky.)
@@ -102,22 +175,6 @@
 
 ; Package Collections
 (define essential-packages
-	;; Generally, I want everything on my machine to be hand-picked by me. I want to replace
-	;; tools that are not harmonious with the essential components of my system. However, I will
-	;; for the time being consider the kernel to be exempt, due to my lack of expertise and the
-	;; difficulty of the material.
-
-	;; Essential components are guile and/or rust. Both of these languages speak to me, but they
-	;; are not harmonized with each other. Harmonization seems difficult because guile is
-	;; closely married to c already, but would minimize duplicate work. In favor of guile alone
-	;; is all the work that has gone into the VM, the existence of guix, the beginning of a scsh
-	;; implementation, deep integration with unix, and commitment to *free* software. In favor
-	;; of rust alone is the shockingly effective integration of high-level concepts into a
-	;; systems language without sacrificing the raw power of c and the macro system that
-	;; actually just lets you program the compiler which is the objectively correct way to do
-	;; macros (the convenience forms of macros, eg macro_rules!, are fine as an addition).
-
-	;; Note: find that thesis from Brown about extensibility of IDEs, seems generalizable
 	(list
 		; Acceptable for Inclusion
 		guix.guile-3.0-latest
@@ -136,7 +193,7 @@
 		; emacs is dope but context switching between lisp dialects is paaaaaiiinful
 		; FIXME: stop using absolute paths local to your system you monster!
 		((guix.options->transformation
-			'((with-patch . "neovim=/home/skyler/Projects/personal-code/patches/neovim-fixed-width-tabs.patch"))) ;%%patches share/patches/neovim-fixed-width-tabs.patch%%")))
+			'((with-patch . "neovim=%%patches share/patches/neovim-fixed-width-tabs.patch%%")))
 			guix.neovim)
 
 		sky.vim-solarized8

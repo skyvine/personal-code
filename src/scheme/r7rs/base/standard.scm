@@ -11,6 +11,12 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; Exports functions which I want to be part of the global environment. This includes some
+; srfi functions which are more readable than the core versions (for example, `first`
+; instead of `car`) as well as some custom function which are abstract. This module should
+; remain very small.
+
 (define-library (skyler r7rs standard)
 
 (import
@@ -22,7 +28,7 @@
 )
 
 (export
-	; from srfi-1
+	; from srfi-1; see that spec for documentation
 	drop
 	drop-right
 	fold
@@ -46,8 +52,33 @@
 
 	; from this module
 	n-ary-combinations
+	; Signature: (n-ary-combinations given)
+	;
+	; Arguments:
+	; given: The list of elements which should be n-ary-combined.
+	;
+	; Returns:
+	; A list of lists containing all possible combinations of 0-n elements from the given
+	; list.
+
 	flatten
+	; Signature: (flatten lst)
+	;
+	; Arguments:
+	; lst: A list of objects, potentially containing nested lists.
+	;
+	; Returns:
+	; A list of obects, containing no nested lists. The values in nested lists from the
+	; given value are placed in the top-level list. So this:
+	;
+	; '(1 (2 3) (4 (5 6 (7)) 8 (9)))
+	;
+	; Will result in this:
+	;
+	; '(1 2 3 4 5 6 7 8 9)
+
 	rest
+	; Alias of `cdr`, for readability.
 )
 
 (begin
@@ -55,7 +86,6 @@
 (define rest cdr)
 
 (define (n-ary-combinations given)
-	"Return all possible combinations of any length composed of elements in the given list."
 
 	; Notes:
 	; 1. All n-ary combinations of a one-element list are that list and the empty list

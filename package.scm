@@ -11,26 +11,92 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
-(use-modules
-	(guix gexp)
-	(ice-9 match)
-	(srfi srfi-1)
-	(srfi srfi-88)
+; This file is heavily dependent on GNU Guix. If you are not familiar with that project,
+; it will not make much sense.
 
-	((guix build-system channel)       #:prefix guix.)
-	((guix build-system copy)          #:prefix guix.)
-	((guix build-system gnu)           #:prefix guix.)
-	((guix build-system guile)         #:prefix guix.)
-	((guix build-system trivial)       #:prefix guix.)
-	((guix channels)                   #:prefix guix.)
-	((guix describe)                   #:prefix guix.)
-	((guix gexp)                       #:prefix guix.)
-	((guix packages)                   #:prefix guix.)
-	((gnu packages base)               #:prefix guix.)
-	((gnu packages gnupg)              #:prefix guix.)
-	((gnu packages guile)              #:prefix guix.)
-	((gnu packages package-management) #:prefix guix.)
-)
+; # Documentation
+; This file defines the set of packages which provide the code in this repository. This
+; file needs to be installed imperatively, because the repository contains the
+; operating-system and home definitions which would otherwise use the packages defined in
+; this file. To avoid this problem, this file is used to "bootstrap" a new system with
+; the definitions and dependencies. The other option would be to keep a separate
+; repository as a channel, and this was tried first, but it added additional complexity
+; without a clear benefit because there was still a bootstrapping step. It additionally
+; cause an issue because upgrading the packages in this repository through `guix pull`
+; also fetches updates from Guix (and any other channels such as RDE), which is rude when
+; this is in active development and needs to be upgraded multiple times in a single day.
+
+(define-module (bootstrap)
+	#:use-module (guix gexp)
+	#:use-module (ice-9 match)
+	#:use-module (srfi srfi-1)
+
+	#:use-module ((guix build-system channel)       #:prefix guix.)
+	#:use-module ((guix build-system copy)          #:prefix guix.)
+	#:use-module ((guix build-system gnu)           #:prefix guix.)
+	#:use-module ((guix build-system guile)         #:prefix guix.)
+	#:use-module ((guix build-system trivial)       #:prefix guix.)
+	#:use-module ((guix channels)                   #:prefix guix.)
+	#:use-module ((guix describe)                   #:prefix guix.)
+	#:use-module ((guix gexp)                       #:prefix guix.)
+	#:use-module ((guix packages)                   #:prefix guix.)
+	#:use-module ((gnu packages base)               #:prefix guix.)
+	#:use-module ((gnu packages gnupg)              #:prefix guix.)
+	#:use-module ((gnu packages guile)              #:prefix guix.)
+	#:use-module ((gnu packages package-management) #:prefix guix.)
+
+	#:export (
+		inject-store-paths
+		; Variable containing a quoted lisp expression.
+		;
+		;complete function signature. This is a build phase which replaces expressions of the form `%%package path%%` with
+		; the absolute store path in the requested package. For example the following form:
+		;
+		; %%bash /bin/sh%%
+		;
+		; Would be replaced with:
+		;
+		; /gnu/store/<a-very-long-hash>-bash-<version>/bin/sh
+		;
+		; The requested package must be declared in the inputs of the package using this
+		; phase The glibc-locales package must also be included, to ensure that files
+		; containing non-ascii characters will be processed without error.
+
+		check
+		; Signature: (check module-names)
+		;
+		; Arguments:
+		; module-names: A list of module names which contain the magic submodule `test`, which
+		;               itself contains the magic variable `all-tests`. The variable must
+		;               contain a list of thunks which run the relevant tests.
+		;
+		; WARNING: Do NOT modify the load-path from inside of tests or functions called by the
+		; tests. Doing so will further corrupt the purity of the build process.
+		;
+		; Returns:
+		; A build phase which runs the tests of all of the modules. The build phase assumes
+		; that it is running in the guile-build-system provided by GNU Guix, immediately after
+		; the install-documentation phase. Other build systems or phase orderings might work
+		; by coincidence.
+
+		patches
+		; A package containing the patches that I use on packages defined elsewhere.
+
+		base-guile-code
+		; A package containing all of the code in the "base" projects. This code is intended
+		; to be re-usable across multiple projects and keeping it in a separate project keeps
+		; the dependency footprint smaller.
+
+		guix-code
+		; A package containing all of my guix configuration, including helpers for defining
+		; machines for specific uses, packages, and everything else that depends on guix.
+
+		personal-code
+		; A meta-package which includes the other packages defined in this file as propagated
+		; inputs.
+))
+
+(use-modules (srfi srfi-88))
 
 (define version "0.0")
 
@@ -55,10 +121,12 @@
 (define no-tests-error-message
 	`(format #f
 		,(string-append "The test module ~a does not define the all-tests variable. This "
-		               "should be a list of functions as created by define-test or , from "
-		               "make-testthe (skyler r7rs test utils) module.")
+		                "should be a list of functions as created by define-test or , from "
+		                "make-test the (skyler r7rs test utils) module.")
 		module-name))
 
+; This contains the bulk of the check function's implementation, and operates on exactly
+; one of the given modules. It sets the load path to include the current directory 
 (define check-runner 
 	`(lambda (module-name) (save-module-excursion (lambda ()
 		; set! the %load-path manually instead of using add-to-load-path in order to make sure
@@ -66,7 +134,7 @@
 		; recommends using add-to-load-path so that it is modified at compile-time, but this
 		; will not be compiled before running (note that we are in a quasiquote), and we're
 		; depending on the environment (shudders) here anyway, so we don't want it to take
-		; effect at compile-time even if it was compiled. Module introspection is fun. =]
+		; effect at compile-time even if it was compiled. Module introspection is fun.
 		(set! %load-path (cons (getcwd) %load-path))
 		(let ((test-module (resolve-module module-name #:ensure #f)))
 			(unless test-module
@@ -75,9 +143,8 @@
 			(unless (module-variable test-module 'all-tests)
 				(error ,no-tests-error-message))
 
-			; Set the current module to make sure we have
-			; dependencies. This is particularly relevant for the
-			; serialization tests, since serialization uses eval.
+			; Set the current module to make sure we have dependencies. This is particularly
+			; relevant for the serialization tests, since serialization uses eval.
 			(set-current-module test-module)
 
 			; Don't import the util module so we don't pollute the environment. all-tests is a 
@@ -143,8 +210,6 @@
 			(native-inputs (list guix.guile-3.0-latest guile-src r7rs-src))
 
 			(arguments (list
-				not-compiled-file-regexp: "(guix/.*.scm|make.scm)"
-
 				modules: `((guix build utils) ,@guix.%guile-build-system-modules)
 
 				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
@@ -176,14 +241,13 @@
 
 			(build-system        guix.guile-build-system)
 			(native-search-paths guile-search-paths)
-			(native-inputs       (list guix.guile-3.0-latest guix.glibc-locales))
+			(native-inputs       (list guix.guile-3.0-latest guix.glibc-locales patches))
 
 			; need to propagate because we're not compiling, see also the note on the
 			; not-compiled-file-regexp: argument
 			(propagated-inputs (list
 				guix.guile-gcrypt
 				base-guile-code
-				patches
 			))
 
 			(arguments (list
@@ -201,39 +265,6 @@
 
 					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
 
-
-(define make.scm
-	(let ((src (local-file "src/bin/make.scm")))
-		(guix.package
-			(name        "make.scm")
-			(version     "0.1")
-			(home-page   #f)
-			(synopsis    #f)
-			(description #f)
-			(license     #f)
-
-			(build-system        guix.gnu-build-system)
-			(native-search-paths guile-search-paths)
-			(source              #f)
-			(native-inputs       (list guix.guile-3.0-latest (local-file "src/bin/make.scm")))
-
-			(arguments (list
-				phases:
-				#~(modify-phases (@ (guix build gnu-build-system) %standard-phases)
-					(delete  'unpack)
-					(delete  'configure)
-					(delete  'build)
-					(delete  'check)
-					(replace 'install
-						(lambda* (key: outputs #:allow-other-keys)
-							(let ((bin-dir (string-append (assoc-ref outputs "out")
-							                              "/bin"))
-							      (make.scm #$(local-file "src/bin/make.scm")))
-								(use-modules (guix build utils))
-								(mkdir-p bin-dir)
-								(copy-recursively make.scm
-								                  (string-append bin-dir "/make.scm")))))))))))
-
 (define personal-code (guix.package
 	(name              "personal-code")
 	(version           version)
@@ -245,7 +276,7 @@
 	(build-system        guix.trivial-build-system)
 	(native-search-paths guile-search-paths)
 	(source              #f)
-	(propagated-inputs   (list base-guile-code guix-code make.scm))
+	(propagated-inputs   (list base-guile-code guix-code))
 	(arguments           `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
 
 personal-code

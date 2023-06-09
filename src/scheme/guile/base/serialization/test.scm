@@ -11,6 +11,39 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; These tests make sure that the serialization code works with most built-in types (see
+; the exception below), a simple GOOPS class (one containing only built-in types as
+; members), and a complex GOOPS class (one containing another GOOPS class as a member). It
+; is recommended that users of this module write similar tests to make sure that their
+; data types are compatible, particularly if they write custom serialization code. These
+; tests can be facilitated by the exported `make-serialization-test`.
+;
+; # Un-serializable Data
+; 4 types of built-in data types are considered un-serializable:
+;
+; ## EOF
+; Writing the EOF character seems problematic and not particularly useful. The argument
+; for excluding this is weak and in principle it can be serialized, but the need has not
+; come up yet.
+;
+; ## Port
+; A port is dependent on run-time state, so trying to serialize it is absurd.
+;
+; ## Procedure
+; Procedures can be serialized in principle, but the implementation would be quite complex
+; and introduces a number of security risks. GNU Guix accomplishes this through
+; G-Expressions which are very sophisticated; this module is intended for more
+; straightforward use-cases where it is desirable that the output is easily read and
+; modified by human beings (eg, for plaintext configuration files).
+;
+; ## Symbols
+; Serializing symbols seems error-prone because symbols are typically meant for
+; evaluation. Additionally, symbols are used as the magic marker at the start of a
+; serialized object, and expempting them from being otherwise serialized prevents any
+; potential confusion between the two. Like EOF, the argument is weak and it can be
+; implemented should the need arise.
+
 (define-module (skyler serialization test)
 	#:use-module (ice-9 binary-ports)
 	#:use-module (ice-9 pretty-print)
@@ -26,7 +59,21 @@
 
 	#:use-module (skyler serialization)
 
-	#:export (make-serialization-test))
+	#:export (
+		make-serialization-test
+		; Signature: (make-serialization-test name datum key: (print display))
+		;
+		; Arguments:
+		; name: A string containing a human-readable name decribing the test.
+		;
+		; datum: The piece of data that should be (de-)serialized.
+		;
+		; print: The function responsible for printing the data when reporting errors.
+		;
+		; Returns:
+		; An srfi-64 test which serializes the datum, de-serializes it, and checks that the
+		; result is `equal?` to the original datum.
+))
 
 (define* (make-serialization-test name datum key: (print display))
 	(make-test name

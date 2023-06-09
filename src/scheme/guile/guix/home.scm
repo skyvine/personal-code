@@ -11,6 +11,9 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; Contains the home configuration I prefer to use.
+
 (read-set! keywords #f)
 
 (define-module (skyler guix home)
@@ -29,8 +32,10 @@
 	#:use-module ((gnu packages code)        #:prefix guix.)
 	#:use-module ((gnu packages admin)       #:prefix guix.)
 
-	#:export (home)
-	)
+	#:export (
+		home
+		; A home-environment conaining my preferred configuration
+))
 
 (use-modules
 	(skyler standard)

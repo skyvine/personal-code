@@ -11,6 +11,9 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; Tests for artifacts defined in the (skyler r7rs) module. Nothing special about them.
+
 (define-library (skyler r7rs test)
 
 (import
@@ -23,8 +26,6 @@
 	(srfi 26)
 	(srfi 64)
 )
-
-(export main)
 
 (begin
 

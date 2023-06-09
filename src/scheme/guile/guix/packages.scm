@@ -11,6 +11,9 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; Contains definitions for packages that I want to install but are not available upstream.
+
 (read-set! keywords #f)
 
 (define-module (skyler guix packages)
@@ -28,7 +31,20 @@
 	#:use-module ((gnu packages guile-xyz) #:prefix guix.)
 	#:use-module ((gnu packages terminals) #:prefix guix.)
 
-	#:export (haunt-0.3.0 kmscon-with-configurable-resolution vim-solarized8)
+	#:export (
+		haunt-0.3.0
+		; The latest version of haunt. Notably, it includes the `--host` argument to
+		; `haunt build` which is helpful for testing in QubesOS. This was released very
+		; recently and the haunt repo contains a guix.scm, so I expect upstream will update
+		; shortly after the developer puts out a release tarball.
+
+		kmscon-with-configurable-resolution
+		; Adds a patch to kmscon which makes it possible to specify the desired screen
+		; resolution on the command line. The patch adds detailed documentation to the man
+		; page.
+
+		vim-solarized8)
+		; Like the solarized package but with better truecolor support. Nothing fancy here.
 )
 
 (use-modules (skyler standard))

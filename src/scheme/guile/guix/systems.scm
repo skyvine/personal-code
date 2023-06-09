@@ -11,6 +11,9 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; Contains helpers for creating operating-system definitions based on use-case.
+
 (read-set! keywords #f)
 
 (define-module (skyler guix systems)
@@ -30,8 +33,24 @@
 	#:use-module ((gnu packages guile)  #:prefix guix.) ; for setting my default "shell"
 	#:use-module ((gnu packages shells) #:prefix guix.) ; for setting my default shell
 
-	#:export (guix-system portable-system)
-)
+	#:export (
+		guix-system
+		; Signature: (guix-system ip virtual-dns)
+		;
+		; Arguments:
+		; ip, virtual-dns: As in the `qubes-networking-services` function in the
+		; (skyler guix collections) module.
+		;
+		; Returns:
+		; An operating-system definition suitable for use as a developement machine running
+		; inside QubesOS.
+
+		portable-system
+		; An operating-system suitable for use on a portable drive. This is inspired by the
+		; Arch installer ISO, which is my default go-to for "my computer is completely bungled
+		; up, I have no idea why, and I need to fix it". It has a lot of useful utilities.
+		; This image is not yet as useful as that one.
+))
 
 (use-modules (skyler standard)
              ((skyler guix collections) #:prefix sky.))

@@ -4,7 +4,7 @@ decisions because I don't want to forget my reasons. In other cases, I have a te
 to go back and forth on the decision and I want to actually remain consistent, so having
 it written down helps.
 
-## Documentation
+# Documentation
 Documentation will be placed alongside code inside of source files and will use markdown
 formatting. While there is currently no workflow for extracting comments into some
 external document format (info, html, etc), it will be written with the assumption that
@@ -17,9 +17,9 @@ reader to a different module which explains the required concepts (for example, 
 which uses the class conventions need not re-explain the conventions, but will inform the
 reader that the documentation in the `(skyler class-conventions)` module is relevant).
 
-## File Layout
+# File Layout
 
-### Header
+## Header
 The top of a file will contain comments declaring the copyright and license covering the
 file. Nothing will precede these comments, with the exception of a `#!` directive for
 executable script, and only because it is technically necessary for the directive to be at
@@ -27,7 +27,8 @@ the start of the file.
 
 After the legalese, module-level documentation will be placed in comments. This will
 describe the purpose of the module and conceptual information, but does not descibe the
-API in detail; the API is described in the exports section.
+API in detail, as the API is described in the exports section. However, it may show an
+integrated example of multiple API components being used together.
 
 Next, the file will set the namespace. This means either a `define-module` form for
 guile-specific scripts, a `define-library` form for generic r7rs scripts, or the
@@ -36,7 +37,7 @@ imports and exports will take place here, with the exception of internal modules
 the keyword syntax, because setting this syntax may cause errors in other modules.
 Syntax-setting modules will be imported *immediately* after the namespace-setting form.
 
-#### Imports
+### Imports
 Imports will use a prefix of the form `<project>.`, where `<project>` is the (potentially
 abbreviated) name of the project that the module comes from. For example, `guix.` is used
 for modules that come from GNU Guix, and `sky.` for my personal modules. There are 4
@@ -68,11 +69,15 @@ are quite different from some of these languages (python uses a `.` to access me
 namespace, but c++ uses `::` for namespaces and `.` for object members - and in either
 case, the `.` is a language construct rather than part of a symbol name).
 
-#### Exports
+### Exports
 Exports will contain API documentation. This is so that users of the module can refer only
 to the header for typical use, and look at the body of the file only if they need to
 understand or modify implementation. In this way, the header of a scheme file can serve a
 similar purpose to a c/c++ header.
+
+API documentation will specify the data type contained with the variable, for clarity. If
+the variable contains a callable type then it will specify the signature, including the
+expected argument types.
 
 Libraries will not pre-namespaces symbols For example, an accessor for a member named
 `member` in a class named `class` would simply be `member`, not `class-member`. Guile
@@ -80,7 +85,7 @@ provides convenient facilities for dependent modules to rename symbols in an app
 matter, and it is better to leave that decision up to the user rather than enforcing a
 namespacing convention which may or may not suit their needs.
 
-### Body
+## Body
 The body of a file will first and foremost be organized in such a way that the
 organization seems both sensible and useful to the author. Preference will be given to the
 ergonomics of those writing and modifying the file, rather than those reading the file,
@@ -93,13 +98,19 @@ exports section. In either case, functions will contain comments explaining conc
 information useful to understanding their implementation (but not reiterate conceptual
 information from the module documentation).
 
-## Maximum line length
+Trivial artifacts do not need verbose (or, in some cases, any) implementation
+documentation. For example, if the function simply calls a helper function with
+pre-defined arguments, the only useful implementation documentation would involve
+re-explaining the implementation of the helper function, so the reader should just go to
+that one.
+
+# Maximum line length
 Lines will not exceed 90 characters. Line length is completely arbitrary; 90 characters
 lets me fit 2 side-by-side file on my monitor with a little bit of breathing room. For the
 purpose of this limit, tabs are counted as 2 characters (regardless of their starting
 location on the line).
 
-## Keyword Syntax
+# Keyword Syntax
 srfi-88 style keywords are used, meaning that `example:` (postfix syntax) is just as much
 a keyword as `#:example` (default syntax). Both syntaxes are used.
 
@@ -132,7 +143,7 @@ linked to the following value(s), due to the usage of postfix colons in the popu
 programming language. Using the default syntax for values and flags avoids this misleading
 implication.
 
-## Leading blankspace
+# Leading blankspace
 Tabs will be used for indentation and spaces for alignment. This is more taxing for the
 writer, but can be more ergonomic for the reader. The number of spaces that we use for
 indentation is somewhat arbitrary (there is no objectively "correct" answer), and
@@ -163,7 +174,7 @@ that is an even multiple of a fixed amount". This meaning is no longer useful in
 modern day, so I use a patched version of neovim that always resolves tabs to the same
 width. The patch can be found in the `patches` directory of this repository.
 
-### Alignment
+## Alignment
 I err on the side of over-aligning code vs under-aligning it. There is some justification
 for this based on a paper by Hansen, Goldstone, and Lumsdaine\*, where they found that
 programmers are more form an inaccurate mental model of program execution when similar
@@ -173,7 +184,7 @@ reinforced by my personal experience, and at some point I have to make a decisio
 \* Hansen, Goldstone, and Lumsdaine. 2013. What makes code hard to understand?
 https://arxiv.org/pdf/1304.5257.pdf
 
-## Closing parentheses
+# Closing parentheses
 It is not generally useful to place closing parentheses on separate lines, as this creates
 visual noise and lengthens files. However, it is not ergonomic to pick through parentheses
 when modifying code\*, so in cases where modification seems likely parentheses will be
@@ -187,3 +198,11 @@ unlikely or has historiaclly been infrequent.
 \* There are arguments that structured editing solves this problem at that may indeed be
    a better solution, but it is not one that I have (yet) invested time into pursuing.
 
+# Checklist
+
+[ ] Copyright & license
+[ ] Module documentation
+[ ] Namespace declaration
+[ ] Imports use prefix
+[ ] Exports include API documentation
+[ ] Body contains implementation documentation

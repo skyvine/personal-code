@@ -11,6 +11,9 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; Add serialization support for srfi-69 hash tables. They use the symbol
+; <srfi-69-hashtable> as a marker, and are converted to an alist for storage.
+
 (define-module (skyler serialization srfi-69)
 	#:use-module (oop goops)
 	#:use-module (skyler standard)

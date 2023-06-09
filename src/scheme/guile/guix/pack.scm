@@ -11,6 +11,9 @@
 ; You should have received a copy of the GNU Affero General Public License along with this
 ; program. If not, see <https://www.gnu.org/licenses>.
 
+; # Documentation
+; Contains the manifest of packages that I want to install to non-Guix systems.
+
 (read-set! keywords #f)
 
 (define-module (skyler guix pack)
