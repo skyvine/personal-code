@@ -363,13 +363,16 @@
 
 (define (essential-file-systems users groups) (append
 	(list
-		(guix.file-system
-			(device              "tmpfs")
-			(mount-point         "/tmp")
-			(type                "tmpfs")
-			(check?              #f)
-			(options             "mode=0777")
-			(create-mount-point? #t)))
+		; I prefer /tmp to be tmpfs, but this can cause problems when substitutes are not
+		; available because builds can be large. Will figure out a better solution later.
+		;(guix.file-system
+		;	(device              "tmpfs")
+		;	(mount-point         "/tmp")
+		;	(type                "tmpfs")
+		;	(check?              #f)
+		;	(options             "mode=0777")
+		;	(create-mount-point? #t))
+	)
 	(map (lambda (user)
 		(let ((uid (get-user-uid user))
 		      (gid (get-user-gid user groups)))
