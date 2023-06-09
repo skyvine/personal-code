@@ -32,10 +32,11 @@
 	#:export (home)
 	)
 
-(use-modules (skyler standard)
-						 ((skyler guix utils)        #:prefix sky.)
-						 ((skyler guix packages)        #:prefix sky.)
-             ((skyler guix collections)  #:prefix sky.))
+(use-modules
+	(skyler standard)
+	((skyler guix utils)        #:prefix sky.)
+	((skyler guix packages)     #:prefix sky.)
+	((skyler guix collections)  #:prefix sky.))
 
 (read-set! keywords 'postfix)
 
