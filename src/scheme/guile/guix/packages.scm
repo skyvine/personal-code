@@ -20,6 +20,7 @@
 	#:use-module (guix gexp)
 
 	#:use-module ((guix build-system copy) #:prefix guix.)
+	#:use-module ((guix download)          #:prefix guix.)
 	#:use-module ((guix git-download)      #:prefix guix.)
 	#:use-module ((guix gexp)              #:prefix guix.)
 	#:use-module ((guix packages)          #:prefix guix.)
@@ -43,7 +44,7 @@
 		; resolution on the command line. The patch adds detailed documentation to the man
 		; page.
 
-		vim-solarized8)
+		neovim-solarized8)
 		; Like the solarized package but with better truecolor support. Nothing fancy here.
 )
 
@@ -68,27 +69,25 @@
 		(file-name (guix.git-file-name name version))
 		(sha256 (guix.base32 "1w703ic2pvjcfy3541a206iz5iljxpynvp21dcr6ls8mxzfk7g3x"))))))
 
-(define vim-solarized8
-	(let ((version "1.4.0"))
-		(guix.package
-			(name        "vim-solarized8")
-			(version     "1.4.0")
-			(home-page   "https://github.com/lifepillar/vim-solarized8/tree/v1.4.0")
-			(synopsis    "Solarized color theme for vim with full truecolor support")
-			(description "This is yet another Solarized theme for Vim. The main reason for the existence of this project is that the original Solarized theme does not define `guifg` and `guibg` in terminal Vim, making it unsuitable for versions of Vim supporting true-color (i.e., 24-bit color) terminals. Instead, this color scheme works *out of the box everywhere*.")
-			(license     license.expat)
+(define neovim-solarized8
+	(guix.package
+		(name        "neovim-solarized8")
+		(version     "1.5.1-neovim")
+		(home-page   "https://github.com/lifepillar/vim-solarized8/tree/v1.4.0")
+		(synopsis    "Solarized color theme for vim with full truecolor support")
+		(description "This is yet another Solarized theme for Vim. The main reason for the existence of this project is that the original Solarized theme does not define `guifg` and `guibg` in terminal Vim, making it unsuitable for versions of Vim supporting true-color (i.e., 24-bit color) terminals. Instead, this color scheme works *out of the box everywhere*.")
+		(license     license.expat)
 
-			(build-system guix.copy-build-system)
-			(source (guix.origin
-				(method guix.git-fetch)
-				(uri (guix.git-reference
-					(url "https://github.com/lifepillar/vim-solarized8")
-					(commit (string-append "v" version))))
-				(file-name (guix.git-file-name name version))
-				(sha256 (guix.base32 "1kqpxqgw1nbysd9b84f0h70sz2gik13xzwswycrn7i529dkx4wai"))))
+		(build-system guix.copy-build-system)
+		(source (guix.origin
+			(method guix.url-fetch)
+			(uri
+				(string-append "https://github.com/lifepillar/vim-solarized8/archive/refs/tags/v"
+				               version ".tar.gz"))
+			(sha256 (guix.base32 "1pqspr68y7djyjq1l3hmk438kw4pr8wq438s66657d5rdp2bk0rf"))))
 
-			(arguments '(
-				install-plan: '(
-					("colors"    "share/nvim/site/")
-					("doc"       "share/nvim/site/")
-					("templates" "share/nvim/site/")))))))
+		(arguments '(
+			install-plan: '(
+				("colors"    "share/nvim/site/")
+				("doc"       "share/nvim/site/")
+				("templates" "share/nvim/site/"))))))

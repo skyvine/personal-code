@@ -196,7 +196,7 @@
 			'((with-patch . "neovim=%%patches share/patches/neovim-fixed-width-tabs.patch%%")))
 			guix.neovim)
 
-		sky.vim-solarized8
+		sky.neovim-solarized8
 
 		;; I'm not sure if we have enough compression algorithms yet
 		guix.tar ; reducing inode usage could technically be considered compression :P
