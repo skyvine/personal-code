@@ -45,3 +45,10 @@ to be always available. The one written in R7RS makes sense regardless of implem
 while the one written in GNU Guile uses Guile-specific features, and re-exports everything
 from the R7RS version of the module. The other exception is the `base` project, which
 contains code that should be installed to the root of the namespace.
+
+## Branches
+
+The "trunk" branch is where finalized commits are stored. These are all finalized and
+signed by my PGP key. Other branche are for WIP commits. These are not signed and are
+subject to change (amending and force-pushing) at any time. Each side branch contains a
+note at the top of its README explaining its purpose.
