@@ -129,13 +129,6 @@
 ; one of the given modules. It sets the load path to include the current directory 
 (define check-runner 
 	`(lambda (module-name) (save-module-excursion (lambda ()
-		; set! the %load-path manually instead of using add-to-load-path in order to make sure
-		; the code at the end which undoes the modification works correctly. Also, the manual
-		; recommends using add-to-load-path so that it is modified at compile-time, but this
-		; will not be compiled before running (note that we are in a quasiquote), and we're
-		; depending on the environment (shudders) here anyway, so we don't want it to take
-		; effect at compile-time even if it was compiled. Module introspection is fun.
-		(set! %load-path (cons (getcwd) %load-path))
 		(let ((test-module (resolve-module module-name #:ensure #f)))
 			(unless test-module
 				(error (format #f "The test module ~a does not exist." module-name)))
@@ -163,12 +156,25 @@
 			; test function is defined. This issue caused some frustration, but now I am proud
 			; of the robustness of the serialization module.
 			(unless ((@ (skyler test util) run-tests) (module-ref test-module 'all-tests))
-				(error (format #f "Tests did not pass for module ~s" module-name))))
-			(set! %load-path (cdr %load-path))))))
+				(error (format #f "Tests did not pass for module ~s" module-name))))))))
 
 (define (check module-names)
 	`(lambda* (key: inputs #:allow-other-keys)
-		(for-each ,check-runner ',module-names)))
+		(use-modules (srfi srfi-1))
+
+		(let ((input-load-paths (map (lambda (input)
+		                             	(string-append (cdr input) "/share/guile/site/3.0"))
+		                             inputs)))
+			; set! the %load-path manually instead of using add-to-load-path in order to make
+			; sure the code at the end which undoes the modification works correctly. Also, the
+			; manual recommends using add-to-load-path so that it is modified at compile-time,
+			; but this will not be compiled before running (note that we are in a quasiquote),
+			; and we're depending on the environment (shudders) here anyway, so we don't want it
+			; to take effect at compile-time even if it was compiled. Module introspection is
+			; fun.
+			(set! %load-path (append (cons (getcwd) input-load-paths) %load-path))
+			(for-each ,check-runner ',module-names)
+			(set! %load-path (drop %load-path (+ (length input-load-paths) 1))))))
 
 (define guile-search-paths (list
 	(guix.search-path-specification (variable "GUILE_LOAD_PATH")
