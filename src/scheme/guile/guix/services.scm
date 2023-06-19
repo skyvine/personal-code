@@ -58,7 +58,7 @@
 	#:use-module (guix gexp)
 	#:use-module (guix records)
 
-	#:use-module (skyler guix packages)
+	#:use-module ((skyler guix packages) #:prefix sky.)
 
 	#:export (
 		kmscon-with-configurable-resolution-service-type
@@ -72,7 +72,7 @@
   kmscon-with-configurable-resolution-configuration make-kmscon-with-configurable-resolution-configuration
   kmscon-with-configurable-resolution-configuration?
   (kmscon                  kmscon-with-configurable-resolution-configuration-kmscon
-                           (default kmscon-with-configurable-resolution))
+                           (default sky.kmscon))
   (virtual-terminal        kmscon-with-configurable-resolution-configuration-virtual-terminal)
   (login-program           kmscon-with-configurable-resolution-configuration-login-program
                            (default (file-append shadow "/bin/login")))
