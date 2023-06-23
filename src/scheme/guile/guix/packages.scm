@@ -44,18 +44,17 @@
 	#:use-module ((gnu packages xml)         #:prefix guix.)
 
 	#:export (
-		haunt-0.3.0
-		; The latest version of haunt. Notably, it includes the `--host` argument to
-		; `haunt build` which is helpful for testing in QubesOS. This was released very
-		; recently and the haunt repo contains a guix.scm, so I expect upstream will update
-		; shortly after the developer puts out a release tarball.
-
 		libtsm
 		; Aetf's version of libtsm which is required to build the updated kmscon (below).
 
 		kmscon
 		; A version of kmscon which is based on Aetf's development tree and has additional
 		; changes for screen size support. 
+
+		haunt-0.3.0
+		; The latest version of haunt. Notably, it includes the `--host` argument to
+		; `haunt build` which is helpful for testing in QubesOS. The tag exists, but no
+		; tarball, so I don't think this is actually released yet.
 
 		neovim-solarized8
 		; Like the solarized package but with better truecolor support. Nothing fancy here.

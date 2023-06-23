@@ -51,16 +51,6 @@
 	tenth
 
 	; from this module
-	n-ary-combinations
-	; Signature: (n-ary-combinations given)
-	;
-	; Arguments:
-	; given: The list of elements which should be n-ary-combined.
-	;
-	; Returns:
-	; A list of lists containing all possible combinations of 0-n elements from the given
-	; list.
-
 	flatten
 	; Signature: (flatten lst)
 	;
@@ -77,6 +67,33 @@
 	;
 	; '(1 2 3 4 5 6 7 8 9)
 
+	interweave
+	; Signature: (interweave weave lst)
+	;
+	; Arugments:
+	; weave: The object to be interwoven into lst
+	;
+	; lst: the list to weave into
+	;
+	; Returns:
+	; A list of objects, containing all of the values of lst with weave in each
+	; even-numbered position, excluding the final position. Examples:
+	;
+	; (interweave 'weave '())      -> '()
+	; (interweave 'weave '(1))     -> '(1)
+	; (interweave 'weave '(1 2))   -> '(1 weave 2)
+	; (interweave 'weave '(1 2 3)) -> '(1 weave 2 weave 3)
+
+	n-ary-combinations
+	; Signature: (n-ary-combinations given)
+	;
+	; Arguments:
+	; given: The list of elements which should be n-ary-combined.
+	;
+	; Returns:
+	; A list of lists containing all possible combinations of 0-n elements from the given
+	; list.
+
 	rest
 	; Alias of `cdr`, for readability.
 )
@@ -84,6 +101,16 @@
 (begin
 
 (define rest cdr)
+
+(define (interweave weave lst)
+	(define (impl weave lst result)
+		(if (= (length lst) 1)
+			(reverse (cons (first lst) result))
+			(impl weave (rest lst) (append (list weave (first lst)) result))))
+
+	(if (null? lst)
+		'()
+		(impl weave lst '())))
 
 (define (n-ary-combinations given)
 

@@ -79,6 +79,21 @@
 
 	(map test-list nested-lists))
 
-(define all-tests (list n-ary-lists flattened-lists))
+(define interweave-data '(
+ (()          . ())
+ ((1)         . (1))
+ ((1 2)       . (1 weave 2))
+ ((1 2 3)     . (1 weave 2 weave 3))
+ ((1 2 3 4)   . (1 weave 2 weave 3 weave 4))
+ ((1 2 3 4 5) . (1 weave 2 weave 3 weave 4 weave 5))
+ ))
+
+(define-test interweave-lists "interweave"
+	(map (lambda (data)
+	     	(test-assert (print-data-on-fail write equal? (interweave 'weave (car data))
+	     	                                              (cdr data))))
+	     interweave-data))
+
+(define all-tests (list n-ary-lists flattened-lists interweave-lists))
 
 ))
