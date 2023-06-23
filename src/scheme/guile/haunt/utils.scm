@@ -66,13 +66,5 @@
 (define* (signed-posts site posts)
 	(flatten (map signed-source (map haunt.post-file-name posts))))
 
-(define* (signed-source-footer file-name)
-	`(p (i "Download the "
-	       (a (@ (href ,(string-append (signature-directory) "/" file-name)))
-	          "markdown source")
-	       " and "
-	       (a (@ (href ,(string-append (signature-directory) "/" file-name ".sig")))
-	          "signature."))))
-
 (define (signature-file-filter file-name)
 	(not (string-suffix? ".sig" file-name)))
