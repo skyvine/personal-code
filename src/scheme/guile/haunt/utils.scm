@@ -30,6 +30,9 @@
 		signed-posts
 		; TODO
 
+		signed-source
+		; TODO
+
 		signature-file-filter
 		; TODO
 ))
@@ -51,9 +54,10 @@
 
 (define* (signed-source-footer file-name)
 	`(p (i "Download the "
-	       (a (@ (href ,(string-append (signature-directory) file-name))) "markdown source")
+	       (a (@ (href ,(string-append (signature-directory) "/" file-name)))
+	          "markdown source")
 	       " and "
-	       (a (@ (href ,(string-append (signature-directory) file-name ".sig")))
+	       (a (@ (href ,(string-append (signature-directory) "/" file-name ".sig")))
 	          "signature."))))
 
 (define (signature-file-filter file-name)
