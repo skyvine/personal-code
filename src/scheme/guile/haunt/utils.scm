@@ -25,16 +25,30 @@
 
 	#:export (
 		signature-directory
-		; TODO
-
-		signed-posts
-		; TODO
+		; A parameter containing a string specifying the directory the signed source will be
+		; placed in.
 
 		signed-source
-		; TODO
+		; Signature: (signed-source source-file-name)
+		;
+		; Arguments:
+		; source-file-name: The file name of the source which should be copied into the
+		;                   signature-directory. for example, a call to Haunt's post-file-name
+		;                   function, although that particular use-case is served by the
+		;                   signed-posts builder. There must be a file with the same name and
+		;                   a .sig extension added (not replaced).
+		;
+		; Return:
+		; A list of 2 Haunt artifacts, representing a copy of the source and the sig file
+		; inside the signature-directory.
+
+		signed-posts
+		; A Haunt builder which will place a copy of the source for each post file as well as
+		; its signature into the directory specified by the signature-directory parameter.
 
 		signature-file-filter
-		; TODO
+		; A function that can be used in the #:file-filter argument to a Haunt site so that
+		; Haunt does not try to process the signature files as posts.
 ))
 
 (define signature-directory (make-parameter "/signed-source"))
