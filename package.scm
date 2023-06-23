@@ -49,7 +49,7 @@
 		inject-store-paths
 		; Variable containing a quoted lisp expression.
 		;
-		;complete function signature. This is a build phase which replaces expressions of the form `%%package path%%` with
+		; This is a build phase which replaces expressions of the form `%%package path%%` with
 		; the absolute store path in the requested package. For example the following form:
 		;
 		; %%bash /bin/sh%%
@@ -59,7 +59,7 @@
 		; /gnu/store/<a-very-long-hash>-bash-<version>/bin/sh
 		;
 		; The requested package must be declared in the inputs of the package using this
-		; phase The glibc-locales package must also be included, to ensure that files
+		; phase. This creates an implicit dependency on glibc-locales, to ensure that files
 		; containing non-ascii characters will be processed without error.
 
 		check
@@ -101,14 +101,10 @@
 (define version "0.0")
 
 (define inject-store-paths
-	'(lambda* (key: inputs #:allow-other-keys)
-		; TODO: don't make users manually add this... seriously...
-		(unless (assoc-ref inputs "glibc-locales")
-			(error "The inject-store-paths phase requires glibc-locales as an input."))
+	#~(lambda* (key: inputs #:allow-other-keys)
 
 		; Need to set the locale for characters used in flow charts
-		(setenv "GUIX_LOCPATH"
-		        (string-append (assoc-ref inputs "glibc-locales") "/lib/locale"))
+		(setenv "GUIX_LOCPATH" #$(file-append guix.glibc-locales "/lib/locale"))
 		(setlocale LC_ALL "en_US.utf8")
 
 		(substitute* (find-files ".")
@@ -247,7 +243,7 @@
 
 			(build-system        guix.guile-build-system)
 			(native-search-paths guile-search-paths)
-			(native-inputs       (list guix.guile-3.0-latest guix.glibc-locales patches))
+			(native-inputs       (list guix.guile-3.0-latest patches))
 
 			; need to propagate because we're not compiling, see also the note on the
 			; not-compiled-file-regexp: argument
