@@ -1,7 +1,9 @@
 # Purpose
 This code is for my personal machine. My main concern with my machine is having a unified
 programming interface. This means that I should be able to accomplish everything in my
-day-to-day with guile, dropping into C\* where appropriate.
+day-to-day with guile, dropping into C\* where appropriate. See the README in
+`src/scheme/guile/guix/` for more on this, including an explanation of why this is a
+separate repository and I'm not just working in Guix directly.
 
 \* I really like rust too, but it seems tricky to integrate Rust with Guile as deeply as
 C already is. On the table though.
@@ -20,7 +22,7 @@ situation as quickly as possible.
 [The FSF has published advice on license selection.](https://www.gnu.org/licenses/license-recommendations.html)
 I generally agree with this advice, except that they recommend using the AGPL only when it
 "seems likely" that the software will be used on a server. I don't see any reason to make
-a judgement about the liklihood here - if the work is licensed under the AGPL and never
+a judgement about the likelihood here - if the work is licensed under the AGPL and never
 gets used on a server, then it is effectively licensed on the GPL and all is well. If it
 is licensed under the GPL and is unexpectedly used on a server, recovery is difficult, if
 it is even possible.
