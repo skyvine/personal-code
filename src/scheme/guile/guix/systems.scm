@@ -17,8 +17,15 @@
 (read-set! keywords #f)
 
 (define-module (skyler guix systems)
+	#:use-module (oop goops)
+	#:use-module (skyler standard)
+
+	#:use-module (skyler guix collections)
+	#:use-module (skyler guix os-fragment)
+
 	#:use-module ((gnu bootloader)          #:prefix guix.)
 	#:use-module ((gnu bootloader grub)     #:prefix guix.)
+	#:use-module ((gnu packages ssh)        #:prefix guix.)
 	#:use-module ((gnu services)            #:prefix guix.)
 	#:use-module ((gnu services base)       #:prefix guix.)
 	#:use-module ((gnu services ssh)        #:prefix guix.)
@@ -34,110 +41,113 @@
 	#:use-module ((gnu packages shells) #:prefix guix.) ; for setting my default shell
 
 	#:export (
-		guix-system
-		; Signature: (guix-system ip virtual-dns)
+		guix-machine
+		; Signature: (guix-machine ip)
 		;
 		; Arguments:
-		; ip, virtual-dns: As in the `qubes-networking-services` function in the
-		; (skyler guix collections) module.
+		; ip: As in the `qubes-guest` function in the (skyler guix collections) module.
 		;
 		; Returns:
-		; An operating-system definition suitable for use as a developement machine running
-		; inside QubesOS.
+		; My primary guix machine
 
-		portable-system
+		utility
 		; An operating-system suitable for use on a portable drive. This is inspired by the
 		; Arch installer ISO, which is my default go-to for "my computer is completely bungled
 		; up, I have no idea why, and I need to fix it". It has a lot of useful utilities.
 		; This image is not yet as useful as that one.
 ))
 
-(use-modules (skyler standard)
-             ((skyler guix collections) #:prefix sky.))
-
 (read-set! keywords 'postfix)
 
-(define (guix-system ip virtual-dns)
-	(guix.operating-system
-		(host-name "urithiru")
-		(timezone "US/Pacific")
-		(locale "en_US.utf8")
+(define (guix-machine ip)
+	(let* ((username        "user")
+	       (users           (cons (guix.user-account (name  username)
+	                                                 (uid   1000)
+	                                                 (group username)
+	                                                 (supplementary-groups
+	                                                 	'("wheel" "audio" "video")))
+	                              guix.%base-user-accounts))
+	       (groups          (cons (guix.user-group (name username) (id 1000))
+	                              guix.%base-groups))
+	       (keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape"))))
+		(compose-os
+			include-defaults?: #f
 
-		(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
-		                                           (targets '("/dev/xvda"))))
-		(kernel-arguments (cons "video=1920x1080" guix.%default-kernel-arguments))
+			host-name: "nest"
+			timezone:  "US/Pacific"
+			locale:    "en_US.utf8"
 
-		(keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape")))
-		(users (cons*
-		        (guix.user-account (name "skyler")
-		                           (group "skyler")
-		                           (supplementary-groups '("wheel"
-		                                                   "audio"
-		                                                   "video"))
-		                           (shell (guix.file-append guix.fish "/bin/fish"))
-		                           (uid 1000))
+			bootloader: (guix.bootloader-configuration (bootloader guix.grub-bootloader)
+			                                           (targets '("/dev/xvda")))
 
-		        guix.%base-user-accounts))
+			fragments: (list
+				(make <os-fragment> users:  users
+				                    groups: groups
 
-		(groups (cons
-			(guix.user-group (name "skyler") (id 1000))
-			guix.%base-groups))
+				                    file-systems: (list (guix.file-system
+				                    	(device (guix.file-system-label "GUIX_ROOT"))
+				                    	(mount-point "/")
+				                    	(type "ext4")))
 
-		(file-systems (cons* (guix.file-system
-		                     	(device (guix.file-system-label "GUIX_ROOT"))
-		                     	(mount-point "/")
-		                     	(type "ext4"))
-		                    (sky.essential-file-systems users groups)))
+				                    services: (list
+				                    	(guix.service guix.openssh-service-type
+				                    		(guix.openssh-configuration
+				                    			(openssh                            guix.openssh-sans-x)
+				                    			(password-authentication?           #f)
+				                    			(challenge-response-authentication? #f)
+				                    			(use-pam?                           #f))))
 
-		(packages (append sky.essential-packages sky.system-packages))
+				                    kernel-arguments: (cons "video=1920x1080"
+				                                            guix.%default-kernel-arguments))
+				; Foundation
+				(qubes-guest ip)
 
-		(services (append
-			sky.global-services
-			(list
-				(guix.service guix.openssh-service-type
-					(guix.openssh-configuration
-					(password-authentication? #f)
-					(use-pam? #f))))
-			(sky.minimal-services keyboard-layout)
-			(sky.qubes-networking-services ip:          ip
-			                               virtual-dns: virtual-dns)))))
+				; Presentation
+				(tty keyboard-layout users groups)
 
-(define portable-system (guix.operating-system
-	(host-name "raccoon")
-	(timezone "US/Pacific")
-	(locale "en_US.utf8")
+				; Application
+				compression
+				development
+				terminal-utils))))
 
-	; this is the bootloader that the installation OS uses, probably what I want?
-	(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
-	                                           (targets '("/dev/sda"))))
+(define utility
+	(let ((users (cons (guix.user-account (name "raven")
+	                                        (uid 1000)
+	                                        (group name)
+	                                        (supplementary-groups '("wheel" "audio" "video"))
+	                                        (password "")
+	                                        )
+	                   guix.%base-user-accounts))
+	      (groups (cons (guix.user-group (name "raven") (id 1000))
+	                    guix.%base-groups))
+	      (keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape")))
+	      (file-systems (list (guix.file-system (mount-point "/")
+	                          (device (guix.file-system-label "Guix_image"))
+	                          (type "ext4")))))
+		(compose-os
+			include-defaults?: #f
 
-	(keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape")))
-	(users (list
-		(guix.user-account
-			(name "sly-cooper")
-			(uid 1000)
-			(group name)
-			(supplementary-groups '("wheel" "audio" "video"))
-			(password "")
-			(shell (guix.file-append guix.guile-3.0-latest "/bin/guile")))))
+			host-name: "roost"
+			timezone:  "US/Pacific"
+			locale:    "en_US.utf8"
 
-		(groups (cons
-			(guix.user-group (name "sly-cooper") (id 1000))
-			guix.%base-groups))
+			; this is the bootloader that the installation OS uses, probably what I want?
+			bootloader: (guix.bootloader-configuration (bootloader guix.grub-bootloader)
+			                                           (targets '("/dev/sda")))
 
-	(file-systems (cons*
-		(guix.file-system (mount-point "/")
-		                  (device (guix.file-system-label "Guix_image"))
-		                  (type "ext4"))
-		(sky.essential-file-systems users groups)))
+			keyboard-layout: keyboard-layout
 
-	(services (append
-		(guix.modify-services sky.global-services
-			(guix.nscd-service-type unused =>
-				; this configuration is allegedly better for running on USBs
-				(guix.nscd-configuration (caches (@@ (gnu system install) %nscd-minimal-caches)))))
-		(sky.minimal-services keyboard-layout)
-		sky.normal-networking-services
-	))
+			fragments: (list
+				(make <os-fragment> users:        users
+				                    groups:       groups
+				                    file-systems: file-systems
+				)
+				; Foundation
+				bare-metal
 
-	(packages sky.essential-packages)))
+				; Presentation
+				(tty keyboard-layout users groups)
+
+				; Application
+				compression
+				terminal-utils))))

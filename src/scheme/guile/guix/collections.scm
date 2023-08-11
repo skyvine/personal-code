@@ -12,433 +12,372 @@
 ; program. If not, see <https://www.gnu.org/licenses>.
 
 ; # Documentation
-; This module defines groups of packages, services, and other operating-system inputs
-; make it easier to sync common changes between different types of systems. I do not
-; directly rely on any of the collections define in guix (for example, %base-services)
-; because the process of stripping down the system to a bare minimum, converting it into
-; a lisp machine, and rebuilding it as a lisp machine will require that I examine each
-; member in detail anway. So in addition to keeping changes synced, this file serves as
-; a todo list.
+; This provides a set of <os-fragment>s which help me manage different installations in a
+; way that is consistent where it makes sense and specific where it makes sense. All of
+; the fragments can be divided into 3 categories: foundation, presentation, and
+; application.
 ;
-; # Ramblings about reasoning & intentions for lisp machine
-; Essential components are guile and/or rust. Both of these languages speak to me, but
-; they are not harmonized with each other. Harmonization seems difficult because guile is
-; closely married to c already, but would minimize duplicate work. In favor of guile alone
-; is all the work that has gone into the VM, the existence of guix, the beginning of a
-; scsh implementation, deep integration with unix, and commitment to *free* software. In
-; favor of rust alone is the shockingly effective integration of high-level concepts into
-; a systems language without sacrificing the raw power of c and the macro system that
-; actually just lets you program the compiler which is the objectively correct way to do
-; macros (the convenience forms of macros, eg macro_rules!, are fine as an addition).
+; Reminder: The <os-fragment> API is unstable. And bad. Fixing that API should not impact
+;           the set of exported symbols in this module.
+;
+; ## Foundation Fragments 
+; A foundation fragment supplies the core components required to make a system function in
+; a particular context. Foundation fragment are differentiated by the environment in which
+; the system will be used, For instance, the foundation fragment for a system which will
+; be installed directly onto a computer as the primary operating system is different than
+; the foundation fragment for a system that will be installed as a guest in QubesOS.
+;
+; Foundation fragments also supply components which are essential for system operation
+; regardless of context, such as eudev to set up the /dev directory and nss-certs which
+; are required to use https. This means that foundation fragments are doing 2 things, and
+; this needs to be fixed.
+;
+; ## Presentation Fragments
+; Presentation fragments deal with the manner in which software is made accessible to the
+; user. This would typically mean that it provides the facilities of a specific desktop
+; environment such as GNOME, but currently I only implement a tty-based machine. In the
+; future, there will also be a qubes UX integration fragment, which is different than the
+; foundation fragment which is concerned with basic operation (the foundation provides
+; things like the networking service which will be needed even if the Guix guest is
+; running in a dedicated window).
+;
+; In principle, presentation fragments should be supplied on a per-user basis. If one user
+; wants to use i3, another Gnome, and another kmscon, there is no conflict so long as they
+; are not trying to use the same physical machine simultaneously (at which point they have
+; bigger problems to worry about).
+;
+; ## Application Fragments
+; Application fragments provide the things that a user will be directly using, such as
+; command-line utilities, web browsers, terminal emulators, etc. These are naturally
+; package-centric, but there is nothing preventing them from providing services, file
+; systems, etc if it makes sense.
 
 (read-set! keywords #f)
 
 (define-module (skyler guix collections)
 
 	#:use-module (ice-9 optargs)
+	#:use-module (oop goops)
+	#:use-module ((skyler guix os-fragment) #:select (<os-fragment>))
+	#:use-module ((skyler guix os-fragment) #:prefix os-fragment.)
 
 	#:use-module ((gnu packages)                    #:prefix guix.)
 	#:use-module ((gnu services)                    #:prefix guix.)
+	#:use-module ((gnu system)                      #:prefix guix.)
 	#:use-module ((gnu system accounts)             #:prefix guix.)
 	#:use-module ((gnu system file-systems)         #:prefix guix.)
+	#:use-module ((gnu system locale)               #:prefix guix.)
 	#:use-module ((guix channels)                   #:prefix guix.)
 	#:use-module ((guix config)                     #:prefix guix.)
 	#:use-module ((guix profiles)                   #:prefix guix.)
 	#:use-module ((guix gexp)                       #:prefix guix.)
+	#:use-module ((gnu system pam)                  #:prefix guix.)
+	#:use-module ((gnu system shadow)               #:prefix guix.)
 	#:use-module ((guix transformations)            #:prefix guix.)
 
 ; package & service modules come last
 	#:use-module ((gnu packages admin)              #:prefix guix.)
-	#:use-module ((gnu packages aspell)             #:prefix guix.)
 	#:use-module ((gnu packages base)               #:prefix guix.)
 	#:use-module ((gnu packages certs)              #:prefix guix.)
 	#:use-module ((gnu packages code)               #:prefix guix.)
-	#:use-module ((gnu packages commencement)       #:prefix guix.)
 	#:use-module ((gnu packages compression)        #:prefix guix.)
 	#:use-module ((gnu packages cryptsetup)         #:prefix guix.)
-	#:use-module ((gnu packages education)          #:prefix guix.)
-	#:use-module ((gnu packages emacs)              #:prefix guix.)
-	#:use-module ((gnu packages emacs-xyz)          #:prefix guix.)
-	#:use-module ((gnu packages freedesktop)        #:prefix guix.)
+	#:use-module ((gnu packages file)               #:prefix guix.)
 	#:use-module ((gnu packages glib)               #:prefix guix.)
-	#:use-module ((gnu packages gtk)                #:prefix guix.)
 	#:use-module ((gnu packages gnome)              #:prefix guix.)
-	#:use-module ((gnu packages gnome-xyz)          #:prefix guix.)
-	#:use-module ((gnu packages gnuzilla)           #:prefix guix.)
 	#:use-module ((gnu packages guile)              #:prefix guix.)
 	#:use-module ((gnu packages guile-xyz)          #:prefix guix.)
-	#:use-module ((gnu packages kde-systemtools)    #:prefix guix.)
 	#:use-module ((gnu packages less)               #:prefix guix.)
-	#:use-module ((gnu packages libreoffice)        #:prefix guix.)
-	#:use-module ((gnu packages libusb)             #:prefix guix.)
 	#:use-module ((gnu packages linux)              #:prefix guix.)
 	#:use-module ((gnu packages man)                #:prefix guix.)
-	#:use-module ((gnu packages ncurses)            #:prefix guix.)
 	#:use-module ((gnu packages package-management) #:prefix guix.)
 	#:use-module ((gnu packages pciutils)           #:prefix guix.)
-	#:use-module ((gnu packages python)             #:prefix guix.)
-	#:use-module ((gnu packages rust)               #:prefix guix.)
-	#:use-module ((gnu packages rust-apps)          #:prefix guix.)
 	#:use-module ((gnu packages shells)             #:prefix guix.)
-	#:use-module ((gnu packages terminals)          #:prefix guix.)
 	#:use-module ((gnu packages texinfo)            #:prefix guix.)
 	#:use-module ((gnu packages tmux)               #:prefix guix.)
 	#:use-module ((gnu packages vim)                #:prefix guix.)
 	#:use-module ((gnu packages version-control)    #:prefix guix.)
-	#:use-module ((gnu packages w3m)                #:prefix guix.)
 	#:use-module ((gnu packages wget)               #:prefix guix.)
 
 	#:use-module ((gnu services avahi)      #:prefix guix.)
 	#:use-module ((gnu services base)       #:prefix guix.)
-	#:use-module ((gnu services dbus)       #:prefix guix.)
 	#:use-module ((gnu services desktop)    #:prefix guix.)
 	#:use-module ((gnu services networking) #:prefix guix.)
-	#:use-module ((gnu services shepherd)   #:prefix guix.)
-	#:use-module ((gnu services sound)      #:prefix guix.)
 	#:use-module ((gnu services sysctl)     #:prefix guix.)
-	#:use-module ((gnu services xorg)       #:prefix guix.)
+
+	#:use-module (skyler guix os-fragment)
+	#:use-module (skyler guix packages)
+	#:use-module (skyler guix services)
 
 	#:export (
-		essential-packages
-		; A list of packages which should exist on every machine, including hyper-minimal
-		; machines such as routers.
+		; All exported symbols are <os-frament> values, or procedures returning such a value
 
-		system-packages
-		; A list of packages which should be included in the operating-system definition and
-		; excluded from any home definitions for correct functioning. For example, the shadow
-		; package contains the `su` binary and it will (thankfully) not work properly if it
-		; is installed as a user package.
+		; Foundation Fragments
+		bare-metal
+		; Provides components required to run a system directly on hardware. This is a typical
+		; install onto a computer, or for building a disk image.
 
-		luxury-packages
-		; A list of packages which does not conform to lisp machine expectations, but are
-		; practical for doing things at the moment.
-
-		global-services
-		; A list of services which should exist on every machine, including hyper-minimal
-		; machines such as routers.
-
-		minimal-services
-		; Signature (minimal-services keyboard-layout)
+		qubes-guest
+		; Signature: (qubes-guest ip)
 		;
 		; Arguments:
-		; keyboard-layout: The layout that is used by default on the system.
+		; ip: A string representing the IP address, including netmask.
+		;     For example, "10.137.0.200/32".
 		;
 		; Returns:
-		; A list of services which are used on minimalist machines intended for interactive
-		; use.
+		; Provides components required to run as a Qubes guest. Currently, this only supports
+		; qubes-specific networking. Guix will still run in a dedicated window and there is
+		; no secure copy/paste, etc. Features which come directly from virtualization, such as
+		; attaching a block device, work out-of-the-box.
 
-		luxury-services
-		; Signature (luxury-services keyboard-layout)
+		; Presentation Fragments
+		tty
+		; Signature: (tty keyboard-layout users groups)
 		;
 		; Arguments:
-		; keyboard-layout: The layout that is used by default on the system.
+		; keyboard-layout: The default keyboard layout that kmscon will use.
+		;
+		; users/groups: The complete list of non-system users and groups that will be
+		;               instantiated. They must have explicitly defined UIDs and GIDs.
+		;               System users/groups are safe to include in the list, but will be
+		;               ignored. These parameters should not be required and will be removed
+		;               in the future.
 		;
 		; Returns:
-		; A list of services which are used on traditional interactive machines.
+		; Provides components which allow the user to use a "tty" ergonomically. In
+		; particular, it uses kmscon for better graphical support.
 
-		normal-networking-services
-		; A list of networking services that enable networking in traditional environments.
+		; Application Fragments
+		compression
+		; Provides components related to de-/compression. This includes atool as a front-end
+		; so that you don't have to memorize a million different interfaces, as well as the
+		; back-ends it relies on.
 
-		qubes-networking-services
-		; Signature: (qubes-networking-services ip virtual-dns)
-		;
-		; Arguments:
-		; ip: A string containing the IP address assigned to the Qube by Guix. Must contain
-		;     the netmask using slash notation.
-		;
-		; virtual-dns: A list of IP addresses that are used as DNS servers. Please use the
-		;              ones listed in the Qubes settings, not external DNS servers.
+		development
+		; Provides components exclusively useful when developing software.
 
-		essential-file-systems
-		; Signature: (essential-file-systems users groups)
-		;
-		; Arguments:
-		; users: The list of users installed on the target operating-system
-		;
-		; groups: The list of groups installed on the target operating-system
-		;
-		; Returns:
-		; A list of filesystems that should be included in an operating system definition.
-		; This exists mostly because XDG_RUNTIME_DIR is typically created by some init script
-		; in a desktop environment, and guix can run into problems if this directory does
-		; not exist. This need is why the users and groups must be passed in, and
-		; unfortunately this implementation which declares the directories instead of creating
-		; them imperatively imposes the requirement that UIDs and GIDs are declared explicitly
-		; (if they are not explicitly declared, then these are also created imperatively).
+		terminal-utils
+		; Provides components which facilitate a terminal-based workflow in general. This is
+		; useful even on machines with full desktop environments (unless you prefer to not
+		; have coreutils installed ;)
 ))
 
-(use-modules (skyler standard)
-             ((skyler guix packages) #:prefix sky.)
-             ((skyler guix services) #:prefix sky.))
 
 (read-set! keywords 'postfix)
 
-; Package Collections
-(define essential-packages
-	(list
-		; Acceptable for Inclusion
-		guix.guile-3.0-latest
-		guix.guile-colorized
-		guix.guile-readline
+; Foundation Fragments
 
-		;; kernel stuff
-		guix.eudev ; sets up /dev directory; eudev is the gentoo fork of plain udev
-		guix.kmod ; kernel module utils: modprobe, etc
+;; Helpers
+;;; Things which are common to all foundation fragments. Avoid repeating myself.
+(define foundation-common
+	(make <os-fragment>
+		kernel-arguments:   guix.%default-kernel-arguments
+		firmware:           guix.%base-firmware
+		skeletons:          (guix.default-skeletons)
+		locale-definitions: guix.%default-locale-definitions
+		locale-libcs:       guix.%default-locale-libcs
+		pam-services:       (guix.base-pam-services)
+		setuid-programs:    guix.%setuid-programs
 
-		; Harmonization Needed
-		guix.cryptsetup
-		guix.info-reader
-		(list guix.glib "bin") ; gio
+		packages: (list
+			guix.eudev ; sets up /dev directory; eudev is the gentoo fork of plain udev
+			guix.glibc-locales
+			guix.kmod ; kernel module utils: modprobe, etc
+			guix.nss-certs ; required for https
+			guix.shadow
+			guix.sudo)
 
-		; emacs is dope but context switching between lisp dialects is paaaaaiiinful
-		; FIXME: stop using absolute paths local to your system you monster!
-		((guix.options->transformation
-			'((with-patch . "neovim=%%patches share/patches/neovim-fixed-width-tabs.patch%%")))
-			guix.neovim)
+		services: (list
+			(guix.service guix.guix-service-type
+				(guix.guix-configuration
+				(authorize-key? #t)
+				(guix (guix.current-guix))))
+			(guix.service guix.ntp-service-type) ; Network Time Protocol
+			; name service cache daemon, for passwords, groups, and hosts
+			(guix.service guix.nscd-service-type)
+			(guix.service guix.special-files-service-type
+				`(("/bin/sh"      ,(guix.file-append guix.dash      "/bin/dash"))
+				  ("/usr/bin/env" ,(guix.file-append guix.coreutils "/bin/env"))))
+			(guix.service guix.static-networking-service-type
+			              (list guix.%loopback-static-networking))
+			; kernel parameter config, different than systemctl
+			(guix.service guix.sysctl-service-type)
+			(guix.service guix.syslog-service-type (guix.syslog-configuration))
+			(guix.service guix.udev-service-type ; sets up /dev
+				(guix.udev-configuration (rules (list
+					; for creating the mapper entries
+					guix.lvm2
 
-		sky.neovim-solarized8
+					; Filesystem in USErspace, for non-privileged filesystem creation and editing
+					guix.fuse
 
-		;; I'm not sure if we have enough compression algorithms yet
-		guix.tar ; reducing inode usage could technically be considered compression :P
-		guix.gzip
+					; Advanced Linux Sound Architecture
+					guix.alsa-utils
+
+					; helps regulatory compliance for wireless signals
+					guix.crda))))
+			(guix.service guix.upower-service-type) ; power monitoring, inc. battery status
+			(guix.service guix.urandom-seed-service-type))
+
+		file-systems: guix.%base-file-systems
+			; TODO: I prefer /tmp to be tmpfs, but this can cause problems when substitutes are
+			; not available (particularly common during development =) because builds can be
+			; large. Will figure out a better solution later.
+			;file-systems: (list
+			;	(guix.file-system
+			;		(device              "tmpfs")
+			;		(mount-point         "/tmp")
+			;		(type                "tmpfs")
+			;		(check?              #f)
+			;		(options             "mode=0777")
+			;		(create-mount-point? #t))
+		))
+
+(define bare-metal
+	(compose-fragments
+		(make <os-fragment>
+			packages: (list guix.network-manager)
+			services: (list
+				(guix.service guix.avahi-service-type) ; DNS discovery
+				(guix.service guix.network-manager-service-type)
+				; wpa-supplicant IS an external NetworkManager dependency
+				(guix.service guix.wpa-supplicant-service-type)))
+		foundation-common))
+
+(define (qubes-guest ip)
+	(compose-fragments
+		(make <os-fragment>
+			services: (list
+				(guix.service guix.static-networking-service-type
+					(list
+						(guix.static-networking
+							(addresses    (list (guix.network-address (device "eth0")
+							                                          (value  ip))))
+							(routes       (list (guix.network-route (destination "default")
+							                                        (device      "eth0"))))
+							(name-servers (list "10.139.1.1" "10.139.1.2")))))))
+		foundation-common))
+
+; Presentation Fragments
+;;; FIXME: this should not require foreknowledge of the existing users and groups. See the
+;;;        note in the filesystems definition.
+(define* (tty keyboard-layout users groups) (let*
+	((get-gid-by-name (lambda (name groups)
+	 	(let ((matches (filter (lambda (group) (string=? (guix.user-group-name group)) name)
+	 	                       groups)))
+	 		(if (>= (length matches) 1)
+	 			(guix.user-group-id (car matches))
+	 			(error (string-append "The group " name " must have an explicitly defined GID!"
+	 			                      " Add a (gid <number>) form to the group definition."))))))
+
+	 (get-user-gid (lambda (user groups)
+	 	(unless (guix.user-account-group user)
+	 		(error (string-append "The user " (guix.user-account-name user)
+	 		                      " must have an explicitly defined group! Add"
+	 		                      " (group <name|number>) to the user definition.")))
+
+	 	(let ((gid (if (number? (guix.user-account-group user))
+	 	           	(guix.user-account-group user)
+	 	           	(get-gid-by-name (guix.user-account-group user) groups))))
+	 		(number->string gid))))
+
+	 (get-user-uid (lambda (user)
+	 	(unless (guix.user-account-uid user)
+	 		(error (string-append "The user " (guix.user-account-name user)
+	 		                      " must have an explicitly defined UID! Add (uid <number>) to"
+	 		                      " the user definition.")))
+	 	(number->string (guix.user-account-uid user)))))
+
+		(make <os-fragment>
+				services: (cons
+					(guix.service guix.login-service-type)
+					(map (lambda (tty)
+						(guix.service kmscon-with-configurable-resolution-service-type
+							(kmscon-with-configurable-resolution-configuration
+								(virtual-terminal  (string-append "tty" (number->string tty)))
+								(screen-resolution (cons 1920 1080))
+								(login-program     (guix.file-append guix.shadow "/bin/login"))
+								(keyboard-layout   keyboard-layout))))
+						'(1 2 3 4 5 6 7 8 9)))
+				; Provide the XDG_RUNTIME_DIR which many programs implicitly depend on. This is in
+				; the presentation layer because I have previously seen a conflict when trying to
+				; use this alongside a full desktop enviornment. Looking at the guix source again,
+				; this is managed by the greetd service which should be able to launch kmscon just
+				; as easily as anything else, so perhaps this can be revisited. This concern
+				; should NOT be in the presentation layer. It also feels a bit off to call it a
+				; foundation component. This is why it seems like there should be something in the
+				; middle, because desktops inevitably end up assuming common attributes about
+				; their environment (such as the existence of certain filesystems or serivces)
+				; which are in principle independent of the physical/virtualized context they are
+				; running in, which is most properly the concern of the foundation layer.
+				file-systems: (map (lambda (user)
+					(let ((uid (get-user-uid user))
+					      (gid (get-user-gid user groups)))
+						(guix.file-system
+							; I don't know if this is normally a tmpfs, but the XDG basedir standard
+							; says that it MUST not survive a reboot, so being tmpfs shouldn't cause any
+							; problems. This is technically not compliant because it also says that the
+							; contents MUST be removed if the user fully logs out (implicitly, even if
+							; the system remains powered on) and I'm not doing that. It looks like guix
+							; has a predefined greetd configuration to handle this correctly.
+							(device              "tmpfs")
+							(mount-point         (string-append "/run/user/" uid))
+							(type                "tmpfs")
+							(check?              #f)
+							(options             (format #f "mode=0700,uid=~a,gid=~a" uid gid))
+							(create-mount-point? #t))))
+					(filter (negate guix.user-account-system?) users)))))
+
+; Application Fragments
+(define* terminal-utils (let ()
+	(make <os-fragment>
+		packages: (list
+			guix.guile-3.0-latest
+			guix.guile-colorized
+			guix.guile-readline
+
+			guix.coreutils
+			guix.cryptsetup
+			guix.diffutils
+			guix.e2fsprogs ; mkfs.*
+			guix.file
+			guix.inetutils ; ping & traceroute
+			guix.info-reader
+			guix.iproute
+			guix.less
+			guix.man-db
+			guix.pciutils ; pci is the port for peripherals like gfx card
+			guix.procps ; ps command
+			guix.psmisc ; fuser
+			guix.the-silver-searcher
+			guix.tmux
+			guix.tree
+			guix.usbutils
+			guix.util-linux+udev ; fdisk, su, kill, mount, etc
+			guix.wget
+			guix.which
+
+			; emacs is dope but context switching between lisp dialects is paaaaaiiinful
+			((guix.options->transformation
+				'((with-patch .
+				   "neovim=%%patches share/patches/neovim-fixed-width-tabs.patch%%")))
+				guix.neovim)
+			neovim-solarized8
+		)
+)))
+
+(define compression (make <os-fragment>
+	packages: (list
 		guix.bzip2
+		guix.gzip
 		guix.lzip
+		guix.tar ; reducing inode usage could technically be considered compression :P
 		guix.xz
 		guix.zip
 
-		; New Versions Needed (possibly promote to harmonization)
-		guix.atool
-		guix.coreutils
-		guix.diffutils
-		guix.tmux
-		guix.wget
+		guix.atool)))
 
-		;;; contains fuser which IIUC has been critical in the rare instances where some
-		;;; hardware locked up resource is
-		guix.psmisc 
-
-		;;; contains a boatload of things you expect (fdisk, su, kill, mount, etc)
-		;;; the +udev adds eudev as a dependency to util-linux
-		guix.util-linux+udev
-
-		; Need Consideration
-		;; misc stuff I've accrued over the years
+(define development (make <os-fragment>
+	packages: (list
 		guix.git
-		guix.ispell
-		guix.kbd ; keyboard tools
-		guix.less
-		guix.man-pages ; linux & c man pages
-		guix.nss-certs ; required for https
-		guix.the-silver-searcher
-		guix.tree
-		guix.w3m
-		))
-
-(define system-packages (list
-		guix.glibc-locales
-
-		; Acceptable for Inclusion
-		;; kernel stuff
-		guix.eudev ; sets up /dev directory; eudev is the gentoo fork of plain udev
-		guix.kmod ; kernel module utils: modprobe, etc
-
-		; New Versions Needed (possibly promote to harmonization)
-		guix.e2fsprogs
-
-		guix.inetutils ; server & client, but also ping & traceroute
-		guix.iproute
-		guix.isc-dhcp ; dhcp client
-		guix.ncurses ; required to clear the screen
-		guix.network-manager
-		guix.procps ; ps command
-		guix.which
-
-		; Deprecation
-		guix.iw ; iw command, maybe replacable by network-manager?
-		guix.wireless-tools ; deprecated wireless commands, maybe replacable by network-manager?
-
-		; Need Consideration
-		guix.shadow
-		guix.sudo
-
-		;; from %base-packages-linux
-		guix.pciutils ; pci is the port for peripherals like gfx card
-		guix.usbutils
-
-))
-
-(define luxury-packages (list
-	guix.emacs
-	guix.gnome-tweaks
-	guix.guile-wisp
-	guix.gwl
-	guix.haunt
-	guix.icecat
-	guix.konsole
-	guix.libreoffice
-))
-
-; Service Collections
-(define global-services (list
-	(guix.service guix.sysctl-service-type) ; kernel parameter config, different than systemctl
-	(guix.service guix.avahi-service-type) ; DNS discovery
-	(guix.service guix.syslog-service-type (guix.syslog-configuration))
-	(guix.service guix.static-networking-service-type (list guix.%loopback-static-networking))
-	(guix.service guix.gpm-service-type) ; mouse support in raw ttys
-	(guix.service guix.urandom-seed-service-type)
-	(guix.service guix.nscd-service-type) ; name service cache daemon, for passwords, groups, and hosts
-	(guix.simple-service 'mtp guix.udev-service-type (list guix.libmtp)) ; Media Transfer Protocol
-	(guix.service guix.upower-service-type) ; power monitoring, inc. battery status
-	(guix.service guix.ntp-service-type) ; Network Time Protocol
-
-	(guix.service guix.special-files-service-type
-		`(("/bin/sh" ,(guix.file-append guix.dash "/bin/dash")) ; snowflaking FTW
-		  ("/usr/bin/env",(guix.file-append guix.coreutils "/bin/env"))
-	))
-
-	; IPC mechanisms for processes that need to communicate without being aware of each
-	; other at development time. For example, a message that a call has started needs to
-	; be sent to any and all processes which might be playing audio.
-	(guix.service guix.dbus-root-service-type)
-
-	; permissions management
-	(guix.service guix.polkit-service-type)
-	guix.polkit-wheel-service ; enables the wheel group
-
-	; all store services: garbage collector, builder, etc
-	(guix.service guix.guix-service-type
-		(guix.guix-configuration
-		(authorize-key? #t)
-		(guix (guix.current-guix))))
-
-	(guix.service guix.udev-service-type ; sets up /dev
-		(guix.udev-configuration (rules (list
-			; for creating the mapper entries
-			guix.lvm2
-
-			; Filesystem in USErspace, for non-privileged filesystem creation and editing
-			guix.fuse
-
-			; Advanced Linux Sound Architecture
-			guix.alsa-utils
-
-			; helps regulatory compliance for wireless signals
-			guix.crda
-	))))
-))
-
-(define (minimal-services keyboard-layout) (cons*
-	(guix.service guix.login-service-type
-	              (guix.login-configuration (allow-empty-passwords? #t)))
-	(map (lambda (tty)
-		(guix.service sky.kmscon-with-configurable-resolution-service-type
-			(sky.kmscon-with-configurable-resolution-configuration
-				(virtual-terminal  (string-append "tty" (number->string tty)))
-				(screen-resolution (cons 1920 1080))
-				(login-program     (guix.file-append guix.shadow "/bin/login"))
-				(keyboard-layout   keyboard-layout))))
-		'(1 2 3 4 5 6 7 8 9))
-))
-
-(define (luxury-services keyboard-layout) (list
-	; for use on, for example, a full install to a laptop
-	(guix.service guix.gdm-service-type)
-	(guix.service guix.gnome-desktop-service-type)
-	(guix.set-xorg-configuration (guix.xorg-configuration (keyboard-layout keyboard-layout)))
-	guix.gdm-file-system-service ; enhances Gnome Display Manager performance w/ cache
-	guix.fontconfig-file-system-service ; compatibility service for fontconfig on guix
-
-	; audio management
-	(guix.service guix.pulseaudio-service-type)
-	(guix.service guix.alsa-service-type)
-
-	; Scanners Are Now Easy, visual scanning ranging from external cameras to screenshots
-	(guix.service guix.sane-service-type)
-
-	; Gnome uses this for some session management tasks, it allows unprivileged access to
-	; some pieces of user information (list of accounts, associated metadata)
-	(guix.service guix.accountsservice-service-type)
-
-	; printer privileges
-	(guix.service guix.cups-pk-helper-service-type)
-
-	; adjusts colors based on device differences (inter-computer and image captures)
-	(guix.service guix.colord-service-type)
-
-	guix.x11-socket-directory-service ; compat between wayland and X11
-))
-
-(define normal-networking-services (list
-	; wpa-supplicant IS an external NetworkManager dependency
-	(guix.service guix.wpa-supplicant-service-type)
-	(guix.service guix.network-manager-service-type)
-))
-
-;; WARNING: Even with this config, networking is finnicky. If you need to change
-;; networks, you might need to reboot guix. It also doesn't seem to work when the network
-;; is provided by whonix.
-(define* (qubes-networking-services key: ip virtual-dns) (list
-	(guix.service guix.static-networking-service-type
-		(list
-			(guix.static-networking
-				(addresses (list (guix.network-address (device "eth0")
-				                                       (value ip))))
-				(routes (list (guix.network-route
-				               (destination "default")
-				               (device "eth0"))))
-				(name-servers virtual-dns))
-))))
-
-; File System Collections
-(define (get-gid-by-name name groups)
-	(let ((matches (filter (lambda (group) (string=? (guix.user-group-name group)) name)
-												 groups)))
-		(if (>= (length matches) 1)
-			(guix.user-group-id (car matches))
-			(error (string-append "The group " name " must have an explicitly defined GID!"
-														" Add a (gid <number>) form to the group definition (and"
-														" probably add a (groups (user-group ...)) form to the"
-														" operating-system definition")))))
-
-(define (get-user-gid user groups)
-	(unless (guix.user-account-group user)
-		(error (string-append "The user " (guix.user-account-name user)
-		                      " must have an explicitly defined group! Add"
-		                      " (group <name|number>) to the user definition.")))
-
-	(let ((gid (if (number? (guix.user-account-group user))
-	           	(guix.user-account-group user)
-	           	(get-gid-by-name (guix.user-account-group user) groups))))
-		(number->string gid)))
-
-(define (get-user-uid user)
-	(unless (guix.user-account-uid user)
-		(error (string-append "The user " (guix.user-account-name user)
-		                      " must have an explicitly defined UID! Add (uid <number>) to"
-		                      " the user definition.")))
-	(number->string (guix.user-account-uid user)))
-
-(define (essential-file-systems users groups) (append
-	(list
-		; I prefer /tmp to be tmpfs, but this can cause problems when substitutes are not
-		; available because builds can be large. Will figure out a better solution later.
-		;(guix.file-system
-		;	(device              "tmpfs")
-		;	(mount-point         "/tmp")
-		;	(type                "tmpfs")
-		;	(check?              #f)
-		;	(options             "mode=0777")
-		;	(create-mount-point? #t))
-	)
-	(map (lambda (user)
-		(let ((uid (get-user-uid user))
-		      (gid (get-user-gid user groups)))
-			(guix.file-system
-				(device              "tmpfs")
-				(mount-point         (string-append "/run/user/" uid))
-				(type                "tmpfs")
-				(check?              #f)
-				(options             (format #f "mode=0700,uid=~a,gid=~a" uid gid))
-				(create-mount-point? #t))))
-		(filter (lambda (u) (not (guix.user-account-system? u))) users))
-	guix.%base-file-systems))
+		guix.man-pages))) ; linux & c man pages
