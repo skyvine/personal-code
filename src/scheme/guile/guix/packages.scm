@@ -19,29 +19,31 @@
 (define-module (skyler guix packages)
 	#:use-module (guix gexp)
 
-	#:use-module ((guix build-system copy)   #:prefix guix.)
-	#:use-module ((guix build-system meson)  #:prefix guix.)
-	#:use-module ((guix download)            #:prefix guix.)
-	#:use-module ((guix git-download)        #:prefix guix.)
-	#:use-module ((guix gexp)                #:prefix guix.)
-	#:use-module ((guix packages)            #:prefix guix.)
-	#:use-module ((guix licenses)            #:prefix license.)
-	#:use-module ((guix transformations)     #:prefix guix.)
-	#:use-module ((guix utils)               #:prefix guix.)
+	#:use-module ((guix build-system copy)       #:prefix guix.)
+	#:use-module ((guix build-system meson)      #:prefix guix.)
+	#:use-module ((guix download)                #:prefix guix.)
+	#:use-module ((guix git-download)            #:prefix guix.)
+	#:use-module ((guix gexp)                    #:prefix guix.)
+	#:use-module ((guix packages)                #:prefix guix.)
+	#:use-module ((guix licenses)                #:prefix license.)
+	#:use-module ((guix transformations)         #:prefix guix.)
+	#:use-module ((guix utils)                   #:prefix guix.)
 
-	#:use-module ((gnu packages)             #:prefix guix.)
-	#:use-module ((gnu packages autotools)   #:prefix guix.)
-	#:use-module ((gnu packages check)       #:prefix guix.)
-	#:use-module ((gnu packages docbook)     #:prefix guix.)
-	#:use-module ((gnu packages freedesktop) #:prefix guix.)
-	#:use-module ((gnu packages gl)          #:prefix guix.)
-	#:use-module ((gnu packages gtk)         #:prefix guix.)
-	#:use-module ((gnu packages guile-xyz)   #:prefix guix.)
-	#:use-module ((gnu packages linux)       #:prefix guix.)
-	#:use-module ((gnu packages pkg-config)  #:prefix guix.)
-	#:use-module ((gnu packages terminals)   #:prefix guix.)
-	#:use-module ((gnu packages xdisorg)     #:prefix guix.)
-	#:use-module ((gnu packages xml)         #:prefix guix.)
+	#:use-module ((gnu packages)                 #:prefix guix.)
+	#:use-module ((gnu packages autotools)       #:prefix guix.)
+	#:use-module ((gnu packages check)           #:prefix guix.)
+	#:use-module ((gnu packages docbook)         #:prefix guix.)
+	#:use-module ((gnu packages freedesktop)     #:prefix guix.)
+	#:use-module ((gnu packages gl)              #:prefix guix.)
+	#:use-module ((gnu packages gtk)             #:prefix guix.)
+	#:use-module ((gnu packages guile-xyz)       #:prefix guix.)
+	#:use-module ((gnu packages linux)           #:prefix guix.)
+	#:use-module ((gnu packages pkg-config)      #:prefix guix.)
+	#:use-module ((gnu packages terminals)       #:prefix guix.)
+	#:use-module ((gnu packages tls)             #:prefix guix.)
+	#:use-module ((gnu packages version-control) #:prefix guix.)
+	#:use-module ((gnu packages xdisorg)         #:prefix guix.)
+	#:use-module ((gnu packages xml)             #:prefix guix.)
 
 	#:export (
 		libtsm
@@ -58,6 +60,10 @@
 
 		neovim-solarized8
 		; Like the solarized package but with better truecolor support. Nothing fancy here.
+
+		guile-gnutls-3.7.14
+		; The latest version of guile-gnutls. Adds some function to the API such as
+		; generate-x509-private-key.
 ))
 
 (use-modules (skyler standard))
@@ -157,3 +163,18 @@
 				("colors"    "share/nvim/site/")
 				("doc"       "share/nvim/site/")
 				("templates" "share/nvim/site/"))))))
+
+(define guile-gnutls-3.7.14
+	(guix.package
+		(inherit guix.guile-gnutls)
+		(version "3.7.14")
+		(source (guix.origin
+			(method guix.git-fetch)
+			(uri (guix.git-reference
+				(url "https://gitlab.com/gnutls/guile")
+				(commit (string-append "v" version))))
+			(file-name (guix.git-file-name "gnutls" version))
+			(sha256 (guix.base32 "01571piav96kw32g3k8ccfand4vp7x92rrfdnybaghjfa2bay2qj"))))
+		(native-inputs (cons* `("autoconf" ,guix.autoconf)
+		                      `("automake" ,guix.automake)
+		                      (guix.package-native-inputs guix.guile-gnutls)))))

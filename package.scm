@@ -45,6 +45,7 @@
 	#:use-module ((gnu packages guile)              #:prefix guix.)
 	#:use-module ((gnu packages guile-xyz)          #:prefix guix.)
 	#:use-module ((gnu packages package-management) #:prefix guix.)
+	#:use-module ((gnu packages tls)                #:prefix guix.)
 
 	#:export (
 		inject-store-paths
@@ -93,7 +94,10 @@
 		; machines for specific uses, packages, and everything else that depends on guix.
 
 		haunt-code
-		; A package contaning the helper functions I use for generating web pages with Haunt.
+		; A package containing the helper functions I use for generating web pages with Haunt.
+
+		web-code
+		; A package containing support code for web programming
 
 		personal-code
 		; A meta-package which includes the other packages defined in this file as propagated
@@ -103,6 +107,14 @@
 (use-modules (srfi srfi-88))
 
 (define version "0.0")
+
+(define guile-gnutls-3.7.14 (begin
+	(load "src/scheme/guile/guix/packages.scm")
+	(@ (skyler guix packages) guile-gnutls-3.7.14)))
+
+(define upgrade-guile-gnutls
+	(guix.package-input-rewriting
+		`((,guix.guile-gnutls ,guile-gnutls-3.7.14))))
 
 (define inject-store-paths
 	#~(lambda* (key: inputs #:allow-other-keys)
@@ -287,7 +299,7 @@
 			(propagated-inputs (list
 				base-guile-code
 				guix.gnupg
-				guix.haunt
+				(upgrade-guile-gnutls guix.haunt)
 			))
 
 			(arguments (list
@@ -302,6 +314,41 @@
 
 					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
 
+(define web-code
+	(let ((haunt-code (guix.local-file "src/scheme/guile/web" recursive?: #t)))
+		(guix.package
+			(name        "web-code")
+			(version     version)
+			(source      #f)
+			(description #f)
+			(synopsis    #f)
+			(home-page   #f)
+			(license     #f)
+
+			(build-system        guix.guile-build-system)
+			(native-search-paths guile-search-paths)
+			(native-inputs       (list guix.guile-3.0-latest))
+
+			(propagated-inputs (list
+				base-guile-code
+				guile-gnutls-3.7.14
+				guix.guile-colorized
+				guix.guile-readline
+				guix.openssl
+			))
+
+			(arguments (list
+				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+					(delete 'unpack)
+					(add-before 'set-locale-path 'fix-paths
+						; Paths in the filesystem are sensible for editing, but not a useful
+						; module structure inside an actual implementation
+						(lambda* (key: inputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(copy-recursively #$haunt-code "./skyler/web")))
+
+					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
+
 (define personal-code (guix.package
 	(name              "personal-code")
 	(version           version)
@@ -313,7 +360,7 @@
 	(build-system        guix.trivial-build-system)
 	(native-search-paths guile-search-paths)
 	(source              #f)
-	(propagated-inputs   (list base-guile-code guix-code haunt-code))
+	(propagated-inputs   (list guix.guile-3.0-latest base-guile-code guix-code haunt-code web-code))
 	(arguments           `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
 
 personal-code
