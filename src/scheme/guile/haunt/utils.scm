@@ -17,7 +17,6 @@
 (read-set! keywords #f)
 
 (define-module (skyler haunt utils)
-	#:use-module ((guix build utils) #:prefix guix.)
 	#:use-module ((haunt artifact)   #:prefix haunt.)
 	#:use-module ((haunt post)       #:prefix haunt.)
 
@@ -54,7 +53,10 @@
 (define signature-directory (make-parameter "/signed-source"))
 
 (define* (signed-source source-file-name)
-	(guix.invoke "%%gnupg /bin/gpg%%" "--verify" (string-append source-file-name ".sig"))
+	(unless (eq? 0 (system* "%%gnupg /bin/gpg%%"
+	                        "--verify" (string-append source-file-name ".sig")))
+		(format #t "ERROR: ~A signature does not match" source-file-name)
+		(exit -1))
 
 	(list (haunt.verbatim-artifact source-file-name
 	                               (string-append (signature-directory)

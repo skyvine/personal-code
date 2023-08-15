@@ -286,7 +286,6 @@
 
 			(propagated-inputs (list
 				base-guile-code
-				guix.guix
 				guix.gnupg
 				guix.haunt
 			))
