@@ -305,10 +305,6 @@
 	(guix.service guix.polkit-service-type)
 	guix.polkit-wheel-service ; enables the wheel group
 
-	; audio management
-	(guix.service guix.pulseaudio-service-type)
-	(guix.service guix.alsa-service-type)
-
 	; all store services: garbage collector, builder, etc
 	(guix.service guix.guix-service-type
 		(guix.guix-configuration
@@ -351,6 +347,10 @@
 	(guix.set-xorg-configuration (guix.xorg-configuration (keyboard-layout keyboard-layout)))
 	guix.gdm-file-system-service ; enhances Gnome Display Manager performance w/ cache
 	guix.fontconfig-file-system-service ; compatibility service for fontconfig on guix
+
+	; audio management
+	(guix.service guix.pulseaudio-service-type)
+	(guix.service guix.alsa-service-type)
 
 	; Scanners Are Now Easy, visual scanning ranging from external cameras to screenshots
 	(guix.service guix.sane-service-type)
