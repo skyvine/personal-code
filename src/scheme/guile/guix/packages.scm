@@ -415,7 +415,9 @@
 
 			(propagated-inputs (list base-guile-code
 			                         guix-utilities
-			                         guix.guile-readline))
+			                         guix.guile-colorized
+			                         guix.guile-readline
+			                         web-code))
 
 			(arguments (list
 				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
