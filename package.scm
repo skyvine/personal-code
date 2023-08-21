@@ -84,6 +84,11 @@
 		patches
 		; A package containing the patches that I use on packages defined elsewhere.
 
+		guix-utilities
+		; A guile library constructed from files picked out of the guix source. Useful for
+		; taking advantage of guix utilities (such as `invoke` or `mkdir-p`) outside of
+		; package definitons
+
 		base-guile-code
 		; A package containing all of the code in the "base" projects. This code is intended
 		; to be re-usable across multiple projects and keeping it in a separate project keeps
@@ -194,6 +199,33 @@
 	(guix.search-path-specification (variable "GUILE_LOAD_COMPILED_PATH")
 	                                (files (list "share/guile/3.0/site-ccache")))))
 
+(define guix-utilities
+	(guix.package
+		(inherit guix.guix)
+		(build-system guix.guile-build-system)
+		(native-search-paths guile-search-paths)
+		(inputs '())
+		(propagated-inputs (list guix.guile-3.0-latest))
+		(arguments (list #:phases
+			#~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+				(add-after 'unpack 'pick-files
+					(lambda* (key: source #:allow-other-keys)
+						(use-modules (guix build utils))
+
+						(chdir "..")
+						(let ((target-directory "included-source/"))
+							(map
+								(lambda (filename)
+									(let ((target-location (string-append target-directory
+									                                      (dirname filename)))
+									      (source-filename (string-append "source/" filename))
+									      (target-filename (string-append target-directory filename)))
+										(mkdir-p target-location)
+										(copy-file source-filename target-filename)))
+								'("guix/build/utils.scm" "guix/base64.scm"))
+							(delete-file-recursively "source")
+							(chdir target-directory)))))))))
+
 (define patches (let ((patches-dir (guix.local-file "patches" recursive?: #t)))
 	(guix.package
 		(name        "patches")
@@ -259,11 +291,12 @@
 
 			(build-system        guix.guile-build-system)
 			(native-search-paths guile-search-paths)
-			(native-inputs       (list guix.guile-3.0-latest patches))
+			(native-inputs       (list guix.guile-3.0-latest))
 
 			(propagated-inputs (list
 				guix.guile-gcrypt
 				base-guile-code
+				patches
 			))
 
 			(arguments (list
@@ -360,7 +393,7 @@
 	(build-system        guix.trivial-build-system)
 	(native-search-paths guile-search-paths)
 	(source              #f)
-	(propagated-inputs   (list guix.guile-3.0-latest base-guile-code guix-code haunt-code web-code))
+	(propagated-inputs   (list guix.guile-3.0-latest base-guile-code guix-code guix-utilities haunt-code web-code))
 	(arguments           `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
 
 personal-code
