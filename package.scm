@@ -275,6 +275,7 @@
 					(add-after 'install-documentation 'check
 						#$(check '((skyler r7rs test)
 						           (skyler serialization test)
+						           (skyler test time)
 					)))
 ))))))
 
