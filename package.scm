@@ -138,8 +138,8 @@
 (define no-tests-error-message
 	`(format #f
 		,(string-append "The test module ~a does not define the all-tests variable. This "
-		                "should be a list of functions as created by define-test or , from "
-		                "make-test the (skyler r7rs test utils) module.")
+		                "should be a list of functions as created by define-test or "
+		                "make-test, from the (skyler r7rs test utils) module.")
 		module-name))
 
 ; This contains the bulk of the check function's implementation, and operates on exactly
