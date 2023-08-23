@@ -101,6 +101,9 @@
 		haunt-code
 		; A package containing the helper functions I use for generating web pages with Haunt.
 
+		red-team-code
+		; A package containing utilities for red-teamers
+
 		web-code
 		; A package containing support code for web programming
 
@@ -348,6 +351,49 @@
 
 					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
 
+(define red-team-code
+	(let ((red-team-code (guix.local-file "src/scheme/guile/red-team" recursive?: #t)))
+		(guix.package
+			(name        "red-team-code")
+			(version     version)
+			(source      #f)
+			(description #f)
+			(synopsis    #f)
+			(home-page   #f)
+			(license     #f)
+
+			(build-system        guix.guile-build-system)
+			(native-search-paths guile-search-paths)
+			(native-inputs       (list guix.guile-3.0-latest patches))
+
+			(propagated-inputs (list base-guile-code guix-utilities))
+
+			(arguments (list
+				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+					(delete 'unpack)
+					(add-before 'set-locale-path 'fix-paths
+						; Paths in the filesystem are sensible for editing, but not a useful
+						; module structure inside an actual implementation
+						(lambda* (key: inputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(unless (copy-recursively #$red-team-code "./skyler/red-team")
+								(error "Unable to copy source!"))))
+
+					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)
+
+					(add-before 'inject-store-paths 'copy-webshells
+						(lambda* (key: outputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(let ((webshells-dir "skyler/red-team/webshells/")
+							      (share-dir (string-append (assoc-ref outputs "out") "/share/")))
+								(format #t "Webshells dir: ~s~%" webshells-dir)
+								(format #t "Share dir:     ~s~%" share-dir)
+								(force-output)
+								(mkdir-p share-dir)
+								(unless (copy-recursively webshells-dir
+								                          (string-append share-dir "/webshells"))
+									(error "Unable to copy webshells!")))))))))))
+
 (define web-code
 	(let ((haunt-code (guix.local-file "src/scheme/guile/web" recursive?: #t)))
 		(guix.package
@@ -394,7 +440,7 @@
 	(build-system        guix.trivial-build-system)
 	(native-search-paths guile-search-paths)
 	(source              #f)
-	(propagated-inputs   (list guix.guile-3.0-latest base-guile-code guix-code guix-utilities haunt-code web-code))
+	(propagated-inputs   (list guix.guile-3.0-latest base-guile-code guix-code guix-utilities haunt-code red-team-code web-code))
 	(arguments           `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
 
 personal-code
