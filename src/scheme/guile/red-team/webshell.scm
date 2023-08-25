@@ -3,7 +3,6 @@
 (define-module (skyler red-team webshell)
 	#:use-module (ice-9 binary-ports)
 	#:use-module (ice-9 rdelim)
-	#:use-module (ice-9 readline)
 	#:use-module (ice-9 string-fun)
 	#:use-module (oop goops)
 	#:use-module (rnrs bytevectors)

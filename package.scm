@@ -412,8 +412,6 @@
 			(propagated-inputs (list
 				base-guile-code
 				guile-gnutls-3.7.14
-				guix.guile-colorized
-				guix.guile-readline
 				guix.openssl
 			))
 
