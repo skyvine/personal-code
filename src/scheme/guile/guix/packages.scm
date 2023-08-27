@@ -91,6 +91,9 @@
 		; to be re-usable across multiple projects and keeping it in a separate project keeps
 		; the dependency footprint smaller.
 
+		guile-syntax-highlighting
+		; A neovim plugin which provides syntax highlighting for guile-specific constructs.
+
 		guix-code
 		; A package containing all of my guix configuration, including helpers for defining
 		; machines for specific uses, packages, and everything else that depends on guix.
@@ -310,6 +313,22 @@
 						           (skyler serialization test)
 						           (skyler test time))))))))))
 
+(define guile-syntax-highlighting (let ((vim-dir (project-dir "src/vim/guile-syntax")))
+	(guix.package
+		(name        "guile-syntax-highlighting")
+		(version     version)
+		(source      #f)
+		(description "Neovim syntax highlighting for guile-specific constructs.")
+		(synopsis    description)
+		(home-page   home-page)
+		(license     license)
+
+		(build-system guix.copy-build-system)
+		(arguments (list
+			phases: #~(modify-phases (@ (guix build copy-build-system) %standard-phases)
+			        	(delete 'unpack))
+			install-plan: #~'((#$vim-dir "etc/xdg/nvim")))))))
+
 (define guix-code
 	(let ((guix-dir (project-dir "src/scheme/guile/guix")))
 		(guix.package
@@ -467,5 +486,5 @@
 	(license     license)
 
 	(build-system      guix.trivial-build-system)
-	(propagated-inputs (list guix.guile-3.0-latest base-guile-code guix-code guix-utilities haunt-code red-team-code web-code))
+	(propagated-inputs (list guix.guile-3.0-latest base-guile-code guile-syntax-highlighting guix-code guix-utilities haunt-code red-team-code web-code))
 	(arguments         `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
