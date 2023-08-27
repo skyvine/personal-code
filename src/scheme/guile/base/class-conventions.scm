@@ -44,6 +44,7 @@
 ; value, so it must be implicitly defined, even if that definition leaves it unbound.**
 ;
 ; # Extensible Flexibility
+; TODO: Is this handled more elegantly by object properties? See 6.9.2 in the manual.
 ; Data structures exposed through the API shall have a core set of slots which define the
 ; information that is essential for core operation as well as the information which is
 ; commonly used by extensions. Additionally, each data structure will have a slot devoted
