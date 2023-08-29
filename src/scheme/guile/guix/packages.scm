@@ -17,35 +17,52 @@
 (read-set! keywords #f)
 
 (define-module (skyler guix packages)
+	; IMPORTANT: This module MUST NOT import any modules from the `(skyler ...)` namespace
+	;            other than build-utils, to avoid bootstrapping complexity. Modules from
+	;            guile core and guix are fine. Other third-party modules might be fine but
+	;            I haven't tried crossing that bridge yet.
+	#:use-module (skyler guix build-utils)
+
 	#:use-module (guix gexp)
 
-	#:use-module ((guix build-system copy)       #:prefix guix.)
-	#:use-module ((guix build-system meson)      #:prefix guix.)
-	#:use-module ((guix download)                #:prefix guix.)
-	#:use-module ((guix git-download)            #:prefix guix.)
-	#:use-module ((guix gexp)                    #:prefix guix.)
-	#:use-module ((guix packages)                #:prefix guix.)
-	#:use-module ((guix licenses)                #:prefix license.)
-	#:use-module ((guix transformations)         #:prefix guix.)
-	#:use-module ((guix utils)                   #:prefix guix.)
+	#:use-module ((guix build-system copy)          #:prefix guix.)
+	#:use-module ((guix build-system guile)         #:prefix guix.)
+	#:use-module ((guix build-system meson)         #:prefix guix.)
+	#:use-module ((guix build-system trivial)       #:prefix guix.)
+	#:use-module ((guix download)                   #:prefix guix.)
+	#:use-module ((guix git-download)               #:prefix guix.)
+	#:use-module ((guix gexp)                       #:prefix guix.)
+	#:use-module ((guix packages)                   #:prefix guix.)
+	#:use-module ((guix licenses)                   #:prefix license.)
+	#:use-module ((guix transformations)            #:prefix guix.)
+	#:use-module ((guix utils)                      #:prefix guix.)
 
-	#:use-module ((gnu packages)                 #:prefix guix.)
-	#:use-module ((gnu packages autotools)       #:prefix guix.)
-	#:use-module ((gnu packages check)           #:prefix guix.)
-	#:use-module ((gnu packages docbook)         #:prefix guix.)
-	#:use-module ((gnu packages freedesktop)     #:prefix guix.)
-	#:use-module ((gnu packages gl)              #:prefix guix.)
-	#:use-module ((gnu packages gtk)             #:prefix guix.)
-	#:use-module ((gnu packages guile-xyz)       #:prefix guix.)
-	#:use-module ((gnu packages linux)           #:prefix guix.)
-	#:use-module ((gnu packages pkg-config)      #:prefix guix.)
-	#:use-module ((gnu packages terminals)       #:prefix guix.)
-	#:use-module ((gnu packages tls)             #:prefix guix.)
-	#:use-module ((gnu packages version-control) #:prefix guix.)
-	#:use-module ((gnu packages xdisorg)         #:prefix guix.)
-	#:use-module ((gnu packages xml)             #:prefix guix.)
+	#:use-module ((gnu packages)                    #:prefix guix.)
+	#:use-module ((gnu packages autotools)          #:prefix guix.)
+	#:use-module ((gnu packages check)              #:prefix guix.)
+	#:use-module ((gnu packages docbook)            #:prefix guix.)
+	#:use-module ((gnu packages freedesktop)        #:prefix guix.)
+	#:use-module ((gnu packages gl)                 #:prefix guix.)
+	#:use-module ((gnu packages gtk)                #:prefix guix.)
+	#:use-module ((gnu packages gnupg)              #:prefix guix.)
+	#:use-module ((gnu packages guile)              #:prefix guix.)
+	#:use-module ((gnu packages guile-xyz)          #:prefix guix.)
+	#:use-module ((gnu packages linux)              #:prefix guix.)
+	#:use-module ((gnu packages package-management) #:prefix guix.)
+	#:use-module ((gnu packages pkg-config)         #:prefix guix.)
+	#:use-module ((gnu packages terminals)          #:prefix guix.)
+	#:use-module ((gnu packages tls)                #:prefix guix.)
+	#:use-module ((gnu packages version-control)    #:prefix guix.)
+	#:use-module ((gnu packages xdisorg)            #:prefix guix.)
+	#:use-module ((gnu packages xml)                #:prefix guix.)
 
 	#:export (
+		; External Packages
+		guix-utilities
+		; A guile library constructed from files picked out of the guix source. Useful for
+		; taking advantage of guix utilities (such as `invoke` or `mkdir-p`) in tools that
+		; might be exported to foreign environments (eg, through `guix pack`).
+
 		libtsm
 		; Aetf's version of libtsm which is required to build the updated kmscon (below).
 
@@ -64,10 +81,62 @@
 		guile-gnutls-3.7.14
 		; The latest version of guile-gnutls. Adds some function to the API such as
 		; generate-x509-private-key.
+
+		; Local Packages
+		patches
+		; A package containing the patches that I use on packages defined elsewhere.
+
+		base-guile-code
+		; A package containing all of the code in the "base" projects. This code is intended
+		; to be re-usable across multiple projects and keeping it in a separate project keeps
+		; the dependency footprint smaller.
+
+		guix-code
+		; A package containing all of my guix configuration, including helpers for defining
+		; machines for specific uses, packages, and everything else that depends on guix.
+
+		haunt-code
+		; A package containing the helper functions I use for generating web pages with Haunt.
+
+		red-team-code
+		; A package containing utilities for red-teamers
+
+		web-code
+		; A package containing support code for web programming
+
+		personal-code
+		; A meta-package which includes the other packages defined in this file as propagated
+		; inputs.
 ))
 
 (use-modules (skyler standard))
 (read-set! keywords 'postfix)
+
+(define guix-utilities
+	(guix.package
+		(inherit guix.guix)
+		(build-system guix.guile-build-system)
+		(inputs '())
+		(propagated-inputs (list guix.guile-3.0-latest))
+		(arguments (list #:phases
+			#~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+				(add-after 'unpack 'pick-files
+					(lambda* (key: source #:allow-other-keys)
+						(use-modules (guix build utils))
+
+						(chdir "..")
+						(let ((target-directory "included-source/"))
+							(map
+								(lambda (filename)
+									(let ((target-location (string-append target-directory
+									                                      (dirname filename)))
+									      (source-filename (string-append "source/" filename))
+									      (target-filename (string-append target-directory filename)))
+										(mkdir-p target-location)
+										(copy-file source-filename target-filename)))
+								'("guix/build/utils.scm" "guix/base64.scm"))
+							(delete-file-recursively "source")
+							(chdir target-directory)))))))))
 
 (define libtsm
 	(let ((commit "d66dd165a4a75d32c84a119bc5ec0da2aae52379"))
@@ -178,3 +247,225 @@
 		(native-inputs (cons* `("autoconf" ,guix.autoconf)
 		                      `("automake" ,guix.automake)
 		                      (guix.package-native-inputs guix.guile-gnutls)))))
+
+; Local Packages
+(define project-root
+	(canonicalize-path (string-append (dirname (current-filename)) "/../../../..")))
+
+(define (project-dir dir)
+	(guix.local-file (string-append project-root "/" dir) recursive?: #t))
+
+(define version "0.0")
+(define home-page "https://git.sr.ht/~skyvine/personal-code")
+(define license license.agpl3+)
+
+(define patches (let ((patches-dir (project-dir "patches")))
+	(guix.package
+		(name        "patches")
+		(version     version)
+		(source      #f)
+		(description "Custom patches to suit software to my taste.")
+		(synopsis    description)
+		(home-page   home-page)
+		(license     license)
+
+		(build-system guix.copy-build-system)
+		(inputs (list patches-dir))
+		(arguments (list
+			phases: '(modify-phases (@ (guix build copy-build-system) %standard-phases)
+			        	(delete 'unpack))
+			install-plan: #~(list (list #$patches-dir "share/patches")))))))
+
+(define base-guile-code
+	(let ((guile-src (project-dir "src/scheme/guile/base"))
+	      (r7rs-src  (project-dir "src/scheme/r7rs/base")))
+		(guix.package
+			(name        "base-guile-code")
+			(version     version)
+			(source      #f)
+			(description "Sharable code used by my projects.")
+			(synopsis    description)
+			(home-page   home-page)
+			(license     license)
+
+			(build-system  guix.guile-build-system)
+			(native-inputs (list guix.guile-3.0-latest))
+			(inputs        (list guile-src r7rs-src))
+
+			(arguments (list
+				modules: `((guix build utils) ,@guix.%guile-build-system-modules)
+
+				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+					(delete 'unpack)
+					(add-before 'set-locale-path 'fix-paths
+						; Paths in the filesystem are sensible for editing, but not a useful
+						; module structure inside an actual implementation
+						(lambda* (key: inputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(copy-recursively #$guile-src "./skyler")
+							(copy-recursively #$r7rs-src "./skyler/r7rs")))
+
+					(add-after 'install-documentation 'check
+						#$(check '((skyler r7rs test)
+						           (skyler serialization test)
+						           (skyler test time))))))))))
+
+(define guix-code
+	(let ((guix-dir (project-dir "src/scheme/guile/guix")))
+		(guix.package
+			(name        "guix-code")
+			(version     version)
+			(source      #f)
+			(description #f)
+			(synopsis    #f)
+			(home-page   #f)
+			(license     #f)
+
+			(build-system  guix.guile-build-system)
+			(native-inputs (list guix.guile-3.0-latest))
+			(inputs        (list guix-dir patches))
+
+			(propagated-inputs (list
+				guix.guile-gcrypt
+				base-guile-code
+				patches
+			))
+
+			(arguments (list
+				; don't compile anything, we always want to use the system's guix, not some snapshot
+				not-compiled-file-regexp: ".*"
+
+				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+					(delete 'unpack)
+					(add-before 'set-locale-path 'fix-paths
+						; Paths in the filesystem are sensible for editing, but not a useful
+						; module structure inside an actual implementation
+						(lambda* (key: inputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(copy-recursively #$guix-dir "./skyler/guix")))
+
+					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
+
+(define haunt-code
+	(let ((haunt-dir (project-dir "src/scheme/guile/haunt"))
+	      (upgrade-guile-gnutls (guix.package-input-rewriting
+	      	`((,guix.guile-gnutls ,guile-gnutls-3.7.14))))
+				)
+		(guix.package
+			(name        "haunt-code")
+			(version     version)
+			(source      #f)
+			(description "Code which supports my website.")
+			(synopsis    description)
+			(home-page   home-page)
+			(license     license)
+
+			(build-system  guix.guile-build-system)
+			(native-inputs (list guix.guile-3.0-latest patches))
+			(inputs        (list haunt-dir))
+
+			(propagated-inputs (list
+				base-guile-code
+				guix.gnupg
+				(upgrade-guile-gnutls guix.haunt)
+			))
+
+			(arguments (list
+				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+					(delete 'unpack)
+					(add-before 'set-locale-path 'fix-paths
+						; Paths in the filesystem are sensible for editing, but not a useful
+						; module structure inside an actual implementation
+						(lambda* (key: inputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(copy-recursively #$haunt-dir "./skyler/haunt")))
+
+					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
+
+(define red-team-code
+	(let ((red-team-dir (project-dir "src/scheme/guile/red-team")))
+		(guix.package
+			(name        "red-team-code")
+			(version     version)
+			(source      #f)
+			(description "Red teaming scripts; not industrial-grade.")
+			(synopsis    description)
+			(home-page   home-page)
+			(license     license)
+
+			(build-system  guix.guile-build-system)
+			(native-inputs (list guix.guile-3.0-latest patches))
+			(inputs        (list red-team-dir))
+
+			(propagated-inputs (list base-guile-code guix-utilities))
+
+			(arguments (list
+				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+					(delete 'unpack)
+					(add-before 'set-locale-path 'fix-paths
+						; Paths in the filesystem are sensible for editing, but not a useful
+						; module structure inside an actual implementation
+						(lambda* (key: inputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(unless (copy-recursively #$red-team-dir "./skyler/red-team")
+								(error "Unable to copy source!"))))
+
+					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)
+
+					(add-before 'inject-store-paths 'copy-webshells
+						(lambda* (key: outputs #:allow-other-keys)
+							(use-modules (guix build utils))
+							(let ((webshells-dir "skyler/red-team/webshells/")
+							      (share-dir (string-append (assoc-ref outputs "out") "/share/")))
+								(format #t "Webshells dir: ~s~%" webshells-dir)
+								(format #t "Share dir:     ~s~%" share-dir)
+								(force-output)
+								(mkdir-p share-dir)
+								(unless (copy-recursively webshells-dir
+								                          (string-append share-dir "/webshells"))
+									(error "Unable to copy webshells!")))))))))))
+
+(define web-code (let ((web-dir (project-dir "src/scheme/guile/web")))
+	(guix.package
+		(name        "web-code")
+		(version     version)
+		(source      #f)
+		(description "Code for working with internet technologies.")
+		(synopsis    description)
+		(home-page   home-page)
+		(license     license)
+
+		(build-system  guix.guile-build-system)
+		(native-inputs (list guix.guile-3.0-latest))
+		(inputs        (list web-dir))
+
+		(propagated-inputs (list
+			base-guile-code
+			guile-gnutls-3.7.14
+			guix.openssl
+		))
+
+		(arguments (list
+			phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+				(delete 'unpack)
+				(add-before 'set-locale-path 'fix-paths
+					; Paths in the filesystem are sensible for editing, but not a useful
+					; module structure inside an actual implementation
+					(lambda* (key: inputs #:allow-other-keys)
+						(use-modules (guix build utils))
+						(copy-recursively #$web-dir "./skyler/web")))
+
+				(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
+
+(define personal-code (guix.package
+	(name        "personal-code")
+	(source      #f)
+	(version     version)
+	(description "A meta-package propogating all of my personal packages.")
+	(synopsis    description)
+	(home-page   home-page)
+	(license     license)
+
+	(build-system      guix.trivial-build-system)
+	(propagated-inputs (list guix.guile-3.0-latest base-guile-code guix-code guix-utilities haunt-code red-team-code web-code))
+	(arguments         `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
