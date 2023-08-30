@@ -119,8 +119,7 @@
 	(guix.package
 		(inherit guix.guix)
 		(build-system guix.guile-build-system)
-		(inputs '())
-		(propagated-inputs (list guix.guile-3.0-latest))
+		(inputs (list guix.guile-3.0-latest))
 		(arguments (list #:phases
 			#~(modify-phases (@ (guix build guile-build-system) %standard-phases)
 				(add-after 'unpack 'pick-files
@@ -291,9 +290,8 @@
 			(home-page   home-page)
 			(license     license)
 
-			(build-system  guix.guile-build-system)
-			(native-inputs (list guix.guile-3.0-latest))
-			(inputs        (list guile-src r7rs-src))
+			(build-system guix.guile-build-system)
+			(inputs       (list guix.guile-3.0-latest guile-src r7rs-src))
 
 			(arguments (list
 				modules: `((guix build utils) ,@guix.%guile-build-system-modules)
@@ -340,9 +338,8 @@
 			(home-page   #f)
 			(license     #f)
 
-			(build-system  guix.guile-build-system)
-			(native-inputs (list guix.guile-3.0-latest))
-			(inputs        (list guix-dir patches))
+			(build-system guix.guile-build-system)
+			(inputs       (list guix.guile-3.0-latest guix-dir patches))
 
 			(propagated-inputs (list
 				guix.guile-gcrypt
@@ -380,8 +377,8 @@
 			(license     license)
 
 			(build-system  guix.guile-build-system)
-			(native-inputs (list guix.guile-3.0-latest patches))
-			(inputs        (list haunt-dir))
+			(native-inputs (list patches))
+			(inputs        (list guix.guile-3.0-latest haunt-dir))
 
 			(propagated-inputs (list
 				base-guile-code
@@ -454,9 +451,8 @@
 		(home-page   home-page)
 		(license     license)
 
-		(build-system  guix.guile-build-system)
-		(native-inputs (list guix.guile-3.0-latest))
-		(inputs        (list web-dir))
+		(build-system guix.guile-build-system)
+		(inputs       (list guix.guile-3.0-latest web-dir))
 
 		(propagated-inputs (list
 			base-guile-code
