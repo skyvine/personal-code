@@ -410,10 +410,12 @@
 			(license     license)
 
 			(build-system  guix.guile-build-system)
-			(native-inputs (list guix.guile-3.0-latest patches))
-			(inputs        (list red-team-dir))
+			(native-inputs (list patches))
+			(inputs        (list guix.guile-3.0-latest red-team-dir))
 
-			(propagated-inputs (list base-guile-code guix-utilities))
+			(propagated-inputs (list base-guile-code
+			                         guix-utilities
+			                         guix.guile-readline))
 
 			(arguments (list
 				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)

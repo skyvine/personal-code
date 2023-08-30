@@ -1,7 +1,32 @@
+; Copyright 2023 Skyler Ferris
+;
+; This program is free software: you can redsitribute it and/or modify it under the terms
+; of the GNU Affero General Public License as published by the Free Software Foundation,
+; either version 3 of the License or (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful, but WITHOUT ANY
+; WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+; PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+;
+; You should have received a copy of the GNU Affero General Public License along with this
+; program. If not, see <https://www.gnu.org/licenses>.
+
+; # Documentation
+; This module contains webshells and functions which use them. A webshell is a piece of
+; logic which takes advantage of a vulnerability on a server to run commands one at a
+; time, typically through HTTP requests. They have limited utility because they tend to
+; spawn a new shell process for each command instead of providing an interactive session.
+;
+; This module contains only a few example webshells, because it's generally expected that
+; the red teamer will craft a webshell appropriate for the system they are testing. The
+; meat of the module is the functions which use a webshell as a backend to perform
+; useful but tedious tasks, such as transeferring a (relatively) large file.
+
 (read-set! keywords #f)
 
 (define-module (skyler red-team webshell)
 	#:use-module (ice-9 binary-ports)
+	#:use-module (ice-9 readline)
 	#:use-module (ice-9 rdelim)
 	#:use-module (ice-9 string-fun)
 	#:use-module (oop goops)
@@ -13,7 +38,8 @@
 	#:use-module (web client)
 	#:use-module (web response)
 
-	#:use-module ((guix base64) #:prefix guix.)
+	#:use-module ((guix base64)      #:prefix guix.)
+	#:use-module ((guix build utils) #:prefix guix.)
 
 	#:export (
 		; # Webshells
@@ -179,8 +205,20 @@
 
 (define* (repl webshell target-host
                key: (prompt (format #f "WESHELL (~a)$ " target-host)))
-	(format #t "~a" prompt)
-	(let ((input (read-line)))
-		(unless (eof-object? input)
-			(format #t "~a~%" (webshell target-host input))
-			(repl webshell target-host prompt: prompt))))
+
+	(add-hook! exit-hook (lambda () (format #t "Exit hook ran!~%")))
+	(let ((webshell-history-file
+	        (string-append (or (getenv "HOME") ".")
+	                           "/.local/share/skyler/red-team/webshell-history/"
+	                           target-host ".history")))
+		(guix.mkdir-p (dirname webshell-history-file))
+
+		(read-history webshell-history-file)
+
+		(let input-loop ((input (readline prompt)))
+			(unless (eof-object? input)
+				(add-history input)
+				(format #t "~a~%" (webshell target-host input))
+				(input-loop (readline prompt))))
+
+		(write-history webshell-history-file)))
