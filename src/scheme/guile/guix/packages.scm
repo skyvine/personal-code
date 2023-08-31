@@ -383,7 +383,7 @@
 			(propagated-inputs (list
 				base-guile-code
 				guix.gnupg
-				(upgrade-guile-gnutls guix.haunt)
+				guix.haunt
 			))
 
 			(arguments (list
@@ -460,7 +460,7 @@
 
 		(propagated-inputs (list
 			base-guile-code
-			guile-gnutls-3.7.14
+			guix.guile-gnutls
 			guix.openssl
 		))
 
