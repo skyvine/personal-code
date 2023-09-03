@@ -26,7 +26,9 @@
 ; also fetches updates from Guix (and any other channels such as RDE), which is rude when
 ; this is in active development and needs to be upgraded multiple times in a single day.
 
+(load "src/scheme/r7rs/base/standard.scm")
+(load "src/scheme/guile/base/standard.scm")
 (load "src/scheme/guile/guix/build-utils.scm")
 (load "src/scheme/guile/guix/packages.scm")
 (use-modules (skyler guix packages))
-personal-code
+base-guile-code
