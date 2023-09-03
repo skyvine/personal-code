@@ -113,9 +113,3 @@
 			(set! %load-path (append (cons (getcwd) input-load-paths) %load-path))
 			(for-each ,check-runner ',module-names)
 			(set! %load-path (drop %load-path (+ (length input-load-paths) 1))))))
-
-(define guile-search-paths (list
-	(guix.search-path-specification (variable "GUILE_LOAD_PATH")
-	                                (files (list "share/guile/site/3.0")))
-	(guix.search-path-specification (variable "GUILE_LOAD_COMPILED_PATH")
-	                                (files (list "share/guile/3.0/site-ccache")))))
