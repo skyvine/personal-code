@@ -104,6 +104,9 @@
 		red-team-code
 		; A package containing utilities for red-teamers
 
+		vim-config
+		; A package containing my personal vim configuration
+
 		web-code
 		; A package containing support code for web programming
 
@@ -277,6 +280,22 @@
 			phases: '(modify-phases (@ (guix build copy-build-system) %standard-phases)
 			        	(delete 'unpack))
 			install-plan: #~(list (list #$patches-dir "share/patches")))))))
+
+(define vim-config (let ((config-dir (project-dir "src/vim/config")))
+	(guix.package
+		(name        "vim-config")
+		(version     version)
+		(source      #f)
+		(description "My personal vim configuration")
+		(synopsis    description)
+		(home-page   home-page)
+		(license     license)
+
+		(build-system guix.copy-build-system)
+		(arguments (list
+			phases: #~(modify-phases (@ (guix build copy-build-system) %standard-phases)
+			        	(delete 'unpack))
+			install-plan: #~'((#$config-dir "/etc/xdg/nvim")))))))
 
 (define base-guile-code
 	(let ((guile-src (project-dir "src/scheme/guile/base"))
@@ -486,5 +505,13 @@
 	(license     license)
 
 	(build-system      guix.trivial-build-system)
-	(propagated-inputs (list guix.guile-3.0-latest base-guile-code guile-syntax-highlighting guix-code guix-utilities haunt-code red-team-code web-code))
+	(propagated-inputs (list guix.guile-3.0-latest
+	                         base-guile-code
+	                         guile-syntax-highlighting
+	                         guix-code
+	                         guix-utilities
+	                         haunt-code
+	                         neovim-solarized8
+	                         red-team-code
+	                         vim-config web-code))
 	(arguments         `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
