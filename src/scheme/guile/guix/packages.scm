@@ -493,7 +493,10 @@
 						(use-modules (guix build utils))
 						(copy-recursively #$web-dir "./skyler/web")))
 
-				(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
+				(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)
+
+				(add-after 'install-documentation 'check
+					#$(check '((skyler web test))))))))))
 
 (define personal-code (guix.package
 	(name        "personal-code")
