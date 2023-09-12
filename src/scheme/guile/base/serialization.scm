@@ -45,9 +45,9 @@
 ;
 ; (<point> x: 4 y: 2)
 ;
-; The exhaustive description is that mandatory and optional slots are serialized by adding
-; the appopriate keyword and the serialization of the slot's value to the list, while
-; (DANGER) implicit slots are not serialized.
+; The technical description is that mandatory and optional slots are serialized by adding
+; the appropriate keyword and the serialization of the slot's value to the list, while
+; implicit slots are not serialized.
 ;
 ; ## 3. Other types of data
 ; Other types of data are more flexible in how they are serialized, but are still a list
@@ -65,6 +65,27 @@
 ; how to write this code. As date serialization is a solved problem, this module is mostly
 ; just hooking the string/date conversion functions into the system, making it easy to
 ; focus on what the programmer needs to do for compatibility.
+;
+; # Security Considerations
+; In principle, this module is intended to be safe to use from data over the wire. It has
+; not been thoroughly vetted for this use-case. The premises which should lead to a secure
+; system are:
+;
+; 1. Data is only evaluated when it is a plain symbol.
+; 2. Evaluated data is only used if it resolves to a GOOPS class which the user includes
+; 3. Deserialization code only runs if the user imported the appropriate serialization
+;    module
+;
+; TODO: rewrite for clarity
+; Due to (1), anything dangerous (such as a define form) will be read as plain data, and
+; will not define anything in the module. If a symbol evaluates to a procedure, then it
+; will not execute. The deserialization and constructor code seems to be the most likely
+; to cause problems, but these will only run if the user decides to import modules which
+; define the relevant code. It is still possible for this to be dangerous, there is
+; nothing to prevent a GOOPS constructor from taking a list and calling eval on it, but
+; it is not the responsibility of this module to prevent that from happening. Rather, it
+; is to prevent the ability to eval arbitrary expressions regardless of the module which
+; calls into this API.
 
 (define-module (skyler serialization)
 	#:use-module (oop goops)
@@ -113,6 +134,7 @@
 	    (null?       obj)
 	    (number?     obj)
 	    (string?     obj)
+	    (symbol?     obj)
 	    (vector?     obj)))
 
 ; # Serialization
@@ -120,14 +142,15 @@
 ; self-evaluating data, and other instances.
 ;
 ; If the data is a container then serialize all of the contents. Only pairs and lists are
-; implemented currenly, but there is nothing preventing the same strategy from being
-; applied to, for example, vectors. Hash tables might be a little trickier.
+; implemented here, but there is nothing preventing the same strategy from being
+; applied to, for example, vectors. SRFI-69 hash tables are implemented in the
+; `(skyler serialization srfi-69)` module.
 ;
-; Otherwise, if the data is self-evaluating, return that and we're done.
+; If the data is self-evaluating, return that and we're done.
 ;
 ; Otherwise, we get into the weeds. By default, the serialization method assumes that the
 ; data is an instance of a conventional class and follows the process described in the API
-; documentation. Custom serializers can also be written by specializig on the data type.
+; documentation. Custom serializers can also be written by specializing on the data type.
 ;
 ; ## Writing a custom serializer
 ; A custom serializer is defined like this:
@@ -144,8 +167,8 @@
 ; 2. The first element of the list must be a symbol that evaluates to a class.
 ; 3. The rest of the list must be serialized data. Typically, this means self-evaluating
 ;    data like keywords, numbers, strings, etc, but it can also include instances which
-;    have been serialized, as they will be recursively deserialized before your custom
-;    deserializer is called.
+;    have been serialized, as they will be deserialized before they are pased into your
+;    deserializer.
 (define* (serialize-slot slot-definition obj optional: (port (current-output-port)))
 	(let ((init-keyword (slot-definition-init-keyword slot-definition)))
 		(if init-keyword
@@ -199,7 +222,7 @@
 ;                │                                 │
 ; ┌──────────────┴──────────────┐    ┌─────────────┴───────────────────┐
 ; │  Symbol evaluates to class  │    │Symbol does not evaluate to class│
-; │Initialize instance with rest│    │             Error!              │
+; │Initialize instance with rest│    │      Return it as a datum       │
 ; └─────────────────────────────┘    └─────────────────────────────────┘
 ;
 ; ## Writing a custom deserializer
@@ -233,15 +256,14 @@
 		(%deserialize (first data) (rest data) module))) ; List (break into first & rest)
 
 ; ## First is symbol
-; If the first element is a symbol, eval it in the context of a calling module. Simply
-; evaluating a symbol should not execute any dangerous code, although using the value that
-; it evaluates to seems riskier. Therefore, abort unless we get a class.
+; If the first element is a symbol, grab the value it maps to from the calling module. If
+; it doesn't map to a value, or if it maps to a value that is not a GOOPS class, then
+; treat it as plain data. See also the security notes in the module documentation.
 (define-method (%deserialize (symbol <symbol>) init-vals (module <module>))
-		(if (is-a? (eval symbol module) <class>)
-			; Symbol evaluates to class
-			(%deserialize (eval symbol module) init-vals module)
-			; Symbol does not evaluate to class (Error!)
-			(error "Symbol must evaluate to a class: " symbol)))
+	(let ((variable (module-variable module symbol)))
+		(if (and variable (is-a? (variable-ref variable) <class>))
+			(%deserialize (variable-ref variable) init-vals module) ; maps to a class
+			(cons symbol (%deserialize init-vals module)))))        ; plain data
 
 ; ## Initialize instance with rest
 ; If we do get a class, allocate an instance of it and deserialize the remaining values.
@@ -264,9 +286,8 @@
 ; had called `(map (cute %deserialize <> module) data)` in the initial call. Technically,
 ; these have different outcomes for a list like
 ; `(#:keywords-self-evaluate <srfi-19-serialized-date> "1970-01-01T00:00:00Z")`
-; Calling map on this entire list would create an error on the second element, but calling
-; %deserialize on the first and rest of the list results a cons cell with the keyword and
-; the date. I don't think this edge case is a problem though, and might even be beneficial
-; in some circumstances. Reasonable behavior is generally preferable to errors.
+; Calling map on this entire list would create a list with a keyword, a symbol, and a
+; string while calling %deserialize on the first and rest of the list would create  a cons
+; cell with the keyword and the date. I don't think this edge case is a problem though.
 (define-method (%deserialize first rest (module <module>))
 	(cons (%deserialize first module) (%deserialize rest module)))

@@ -137,7 +137,7 @@
 	; Port N/A           - depends on runtime state
 	; Procedure N/A      - too complicated & dangerous, these aren't G-Expressions!
 	("String"            . "Coffee. Now.")
-	; Symbol N/A         - these are typically meant to be evaluated, not stand-alone objects
+	("Symbol"            . this-is-a-symbol!-who-would-have-guessed?)
 	("Vector"            . #(#t #\a))
 
 	("Keyword"           . #:lockword)
