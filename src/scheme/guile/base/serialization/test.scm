@@ -75,16 +75,18 @@
 		; result is `equal?` to the original datum.
 ))
 
-(define* (make-serialization-test name datum key: (print display))
+(define* (make-serialization-test name datum key: (print display) (cmp equal?))
 	(make-test name
 		(define serialized-datum (call-with-output-string (lambda (port)
 		                                                 	(write (serialize datum) port))))
+
+		(format ((log-port)) "Serialized form: ~s~%" serialized-datum)
 
 		(define deserialized-datum (call-with-input-string serialized-datum
 		                                                  (lambda (port)
 		                                                  	(deserialize (read port)))))
 
-		(test-assert (print-data-on-fail print equal? datum deserialized-datum))))
+		(test-assert (print-data-on-fail print cmp datum deserialized-datum))))
 
 ; # Data
 ; Serialization should succeed for every primitive type, that is the types described in
