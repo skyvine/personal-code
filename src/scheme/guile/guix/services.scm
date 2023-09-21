@@ -89,7 +89,9 @@
   (screen-resolution       kmscon-with-configurable-resolution-configuration-screen-resolution
                            (default #f))
   (keyboard-layout         kmscon-with-configurable-resolution-configuration-keyboard-layout
-                           (default #f))) ; #f | <keyboard-layout>
+                           (default #f)) ; #f | <keyboard-layout>
+  (debug                   kmscon-with-configurable-resolution-configuration-debug
+                           (default #f)))
 
 (define kmscon-with-configurable-resolution-service-type
   (shepherd-service-type
@@ -104,11 +106,14 @@
            (font-engine (kmscon-with-configurable-resolution-configuration-font-engine config))
            (font-size (kmscon-with-configurable-resolution-configuration-font-size config))
            (screen-resolution (kmscon-with-configurable-resolution-configuration-screen-resolution config))
-           (keyboard-layout (kmscon-with-configurable-resolution-configuration-keyboard-layout config)))
+           (keyboard-layout (kmscon-with-configurable-resolution-configuration-keyboard-layout config))
+           (debug (kmscon-with-configurable-resolution-configuration-debug config)))
+       
 
        (define kmscon-command
          #~(list
             #$(file-append kmscon "/bin/kmscon") "--login"
+            #$@(if debug '("--debug") '())
             "--vt" #$virtual-terminal
             #$@(if screen-resolution
                  `("--desired-width" ,(number->string (car screen-resolution))
