@@ -101,9 +101,6 @@
 		haunt-code
 		; A package containing the helper functions I use for generating web pages with Haunt.
 
-		red-team-code
-		; A package containing utilities for red-teamers
-
 		vim-config
 		; A package containing my personal vim configuration
 
@@ -417,53 +414,6 @@
 
 					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
 
-(define red-team-code
-	(let ((red-team-dir (project-dir "src/scheme/guile/red-team")))
-		(guix.package
-			(name        "red-team-code")
-			(version     version)
-			(source      #f)
-			(description "Red teaming scripts; not industrial-grade.")
-			(synopsis    description)
-			(home-page   home-page)
-			(license     license)
-
-			(build-system  guix.guile-build-system)
-			(native-inputs (list patches))
-			(inputs        (list guix.guile-3.0-latest red-team-dir))
-
-			(propagated-inputs (list base-guile-code
-			                         guix-utilities
-			                         guix.guile-colorized
-			                         guix.guile-readline
-			                         web-code))
-
-			(arguments (list
-				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
-					(delete 'unpack)
-					(add-before 'set-locale-path 'fix-paths
-						; Paths in the filesystem are sensible for editing, but not a useful
-						; module structure inside an actual implementation
-						(lambda* (key: inputs #:allow-other-keys)
-							(use-modules (guix build utils))
-							(unless (copy-recursively #$red-team-dir "./skyler/red-team")
-								(error "Unable to copy source!"))))
-
-					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)
-
-					(add-before 'inject-store-paths 'copy-webshells
-						(lambda* (key: outputs #:allow-other-keys)
-							(use-modules (guix build utils))
-							(let ((webshells-dir "skyler/red-team/webshells/")
-							      (share-dir (string-append (assoc-ref outputs "out") "/share/")))
-								(format #t "Webshells dir: ~s~%" webshells-dir)
-								(format #t "Share dir:     ~s~%" share-dir)
-								(force-output)
-								(mkdir-p share-dir)
-								(unless (copy-recursively webshells-dir
-								                          (string-append share-dir "/webshells"))
-									(error "Unable to copy webshells!")))))))))))
-
 (define web-code (let ((web-dir (project-dir "src/scheme/guile/web")))
 	(guix.package
 		(name        "web-code")
@@ -515,6 +465,5 @@
 	                         guix-utilities
 	                         haunt-code
 	                         neovim-solarized8
-	                         red-team-code
 	                         vim-config web-code))
 	(arguments         `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
