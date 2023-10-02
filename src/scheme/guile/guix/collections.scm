@@ -244,6 +244,16 @@
 				(guix.service guix.wpa-supplicant-service-type)))
 		foundation-common))
 
+(define xen-guest
+	(compose-fragments
+		(make <os-fragment>
+			file-systems: (list
+				(guix.file-system
+					(mount-point "/proc/xen")
+					(device      "xenfs")
+					(type        "xenfs"))))
+		foundation-common))
+
 (define (qubes-guest ip)
 	(compose-fragments
 		(make <os-fragment>
@@ -256,7 +266,7 @@
 							(routes       (list (guix.network-route (destination "default")
 							                                        (device      "eth0"))))
 							(name-servers (list "10.139.1.1" "10.139.1.2")))))))
-		foundation-common))
+		xen-guest))
 
 ; Presentation Fragments
 ;;; FIXME: this should not require foreknowledge of the existing users and groups. See the
