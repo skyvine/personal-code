@@ -21,7 +21,8 @@ syntax keyword guileFunction current-time time? time->seconds seconds->time
 " }}}
 
 " Exceptions {{{
-syntax keyword guileFunction current-exception-handler with-exception-handler raise
+syntax keyword guileSyntax with-exception-handler
+syntax keyword guileFunction current-exception-handler raise
 syntax keyword guileFunction join-timeout-exception? abandoned-mutex-exception?
 syntax keyword guileFunction terminated-thread-exception?
 syntax keyword guileFunction uncaught-exception? uncaught-exception-reason
