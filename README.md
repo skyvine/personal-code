@@ -1,31 +1,21 @@
 # Purpose
-This code is for my personal machine. My main concern with my machine is having a unified
-programming interface. This means that I should be able to accomplish everything in my
-day-to-day with guile, dropping into C\* where appropriate. See the README in
-`src/scheme/guile/guix/` for more on this, including an explanation of why this is a
-separate repository and I'm not just working in Guix directly.
+This repository contains code that I use for my personal machine. It's mostly things to
+maintain my system configuration but also contains some general-purpose code that I find
+useful. I also like thinking about code readability, and try to make this code as
+readable as possible (in term of style, documentation, and documentation style).
 
-\* I really like rust too, but it seems tricky to integrate Rust with Guile as deeply as
-C already is. On the table though.
+I also think a lot about licensing, because proprietary licenses and the long copyright
+times hinder progress and social harmony. I place all code that I write under the APGL by
+default because in my opinion this is how copyright should work by default. I do not think
+that most of the code in this repository will be especially useful to people other than
+me, and if I do then I will spin that off into a separate repository more suitable for
+public use, or send it to some suitable upstream project. But I also think that erring on
+the side of publishing code is better than erring on the side of keeping it secret,
+because I do not know what everyone else might find useful. So I publish this code too.
 
-# License
-Most of the sofware in this repository is licensed under the Affero GNU Public License,
-version 3 or any later version.
-
-I default to using the AGPL 3 or later unless there is a strong reason to downgrade to the
-plain GPL or the LGPL. Some individual files may use different (AGPL-compatible) licenses
-if the source code is mostly borrowed from another project. The top of every source file
-should have language specifying its license; if you find any file is missing this lanugage
-please [open an bug](https://todo.sr.ht/~skyvine/personal-code) and I will remediate the
-situation as quickly as possible.
-
-[The FSF has published advice on license selection.](https://www.gnu.org/licenses/license-recommendations.html)
-I generally agree with this advice, except that they recommend using the AGPL only when it
-"seems likely" that the software will be used on a server. I don't see any reason to make
-a judgement about the likelihood here - if the work is licensed under the AGPL and never
-gets used on a server, then it is effectively licensed on the GPL and all is well. If it
-is licensed under the GPL and is unexpectedly used on a server, recovery is difficult, if
-it is even possible.
+The main exception to the "not useful" part is the vim syntax highlighting for guile code,
+but these files are very crude at the moment, and using them is a simple copy-paste
+operation.
 
 # Organization
 Typically, repositories for scripting languages have a structure that mirror their install
