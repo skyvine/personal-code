@@ -144,8 +144,10 @@
 	(if (comp lhs rhs)
 		#t
 		(begin
-			(print "Left:  " ((log-port))) (print lhs ((log-port))) (newline ((log-port)))
-			(print "Right: " ((log-port))) (print rhs ((log-port))) (newline ((log-port)))
+			(display "Left: " ((log-port))) (newline ((log-port)))
+			(print lhs ((log-port))) (newline ((log-port)))
+			(display "Right:" ((log-port))) (newline ((log-port)))
+			(print rhs ((log-port))) (newline ((log-port)))
 			#f)))
 
 
