@@ -108,6 +108,7 @@
 				; Application
 				compression
 				development
+				(email)
 				terminal-utils))))
 
 (define utility

@@ -102,6 +102,7 @@
 	#:use-module ((gnu services avahi)      #:prefix guix.)
 	#:use-module ((gnu services base)       #:prefix guix.)
 	#:use-module ((gnu services desktop)    #:prefix guix.)
+	#:use-module ((gnu services mail)       #:prefix guix.)
 	#:use-module ((gnu services networking) #:prefix guix.)
 	#:use-module ((gnu services sysctl)     #:prefix guix.)
 
@@ -155,6 +156,18 @@
 
 		development
 		; Provides components exclusively useful when developing software.
+
+		email
+		; Signature: (email key: (exim-config (exim-configuration)) (aliases '()))
+		;
+		; Arguments:
+		; exim-config: An <exim-configuration>.
+		;
+		; aliases: An alist of email aliases, as understood by mail-aliases-service-type.
+		;
+		; Returns:
+		; An operating-system fragment which is suitable for sending mail to remote servers.
+		; This is useful, for example, when used with `git send-email`.
 
 		terminal-utils
 		; Provides components which facilitate a terminal-based workflow in general. This is
@@ -391,3 +404,8 @@
 	packages: (list
 		guix.git
 		guix.man-pages))) ; linux & c man pages
+
+(define* (email key: (exim-config (guix.exim-configuration)) (aliases '()))
+	(make <os-fragment>
+		services: (list (guix.service guix.exim-service-type exim-config)
+		                (guix.service guix.mail-aliases-service-type aliases))))
