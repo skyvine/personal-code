@@ -2,8 +2,12 @@
 
 (define-module (skyler guix build-utils)
 	#:use-module (guix gexp)
-	#:use-module ((gnu packages base) #:prefix guix.)
-	#:use-module ((guix search-paths) #:prefix guix.)
+	#:use-module ((gnu packages base)         #:prefix guix.)
+	#:use-module ((guix build-system trivial) #:prefix guix.)
+	#:use-module ((guix packages)             #:prefix guix.)
+	#:use-module ((guix search-paths)         #:prefix guix.)
+
+	#:use-module (srfi srfi-1)
 
 	#:export (
 		inject-store-paths
@@ -38,6 +42,26 @@
 		; that it is running in the guile-build-system provided by GNU Guix, immediately after
 		; the install-documentation phase. Other build systems or phase orderings might work
 		; by coincidence.
+
+		meta-package
+		; Signature: (meta-package name
+		;                           contained-packages
+		;                           key: (version "0.0")
+		;                                (description
+		;                                  "Meta-package; see output file for contained packages.")
+		;                                home-page)
+		;
+		; Arguments:
+		; name:               A string representing thename of the meta-package.
+		; contained-packages: A list of package objects.
+		; version:            The version of the meta-package itself, which may or may not be
+		;                     derived from the versions of the contained packages.
+		; home-page:          The home-page for the meta-package.
+		;
+		; Returns:
+		; A package object which propogates all of the packages in contained-packages. The
+		; meta-package itself creates a single file in its output directory, the contents of
+		; which are a list of the store paths representing contained-packages.
 ))
 
 (read-set! keywords 'postfix)
@@ -118,3 +142,42 @@
 					#t
 					(error (format #f "The following modules have failing tests: ~a"
 					               (map car failing-modules)))))))
+
+(define* (meta-package name
+                       contained-packages
+                       key: (version "0.0")
+                            (description
+                              "Meta-package; see output file for contained packages.")
+                            home-page)
+	(guix.package
+		(name        name)
+		(source      #f)
+		(version     version)
+		(description description)
+		(synopsis    description)
+		(home-page   home-page)
+		; #f is a valid package license, but a list containing #f is not
+		(license     (filter identity
+		                    (apply lset-union
+		                           equal?
+		                           (map (lambda (package)
+		                                  (if (list? (guix.package-license package))
+		                                    (guix.package-license package)
+		                                    (list (guix.package-license package))))
+		                                contained-packages))))
+
+		(build-system guix.trivial-build-system)
+		(propagated-inputs contained-packages)
+		(arguments (list
+			modules: '((guix build utils))
+			builder: #~(begin
+			             (use-modules (guix build utils))
+			             (mkdir-p %output)
+			             (call-with-output-file (string-append %output "/packages")
+			             	(lambda (port)
+			             		(format port
+			             		        "This meta-package contains the following packages:~%")
+			             		(map (lambda (package)
+			             		     	(format port "    ~a~%" package))
+			             		     '#$contained-packages))))))))
+

@@ -449,22 +449,16 @@
 				(add-after 'install-documentation 'check
 					#$(check '((skyler web test))))))))))
 
-(define personal-code (guix.package
-	(name        "personal-code")
-	(source      #f)
-	(version     version)
-	(description "A meta-package propogating all of my personal packages.")
-	(synopsis    description)
-	(home-page   home-page)
-	(license     license)
-
-	(build-system      guix.trivial-build-system)
-	(propagated-inputs (list guix.guile-3.0-latest
-	                         base-guile-code
-	                         guile-syntax-highlighting
-	                         guix-code
-	                         guix-utilities
-	                         haunt-code
-	                         neovim-solarized8
-	                         vim-config web-code))
-	(arguments         `(builder: (begin (mkdir (assoc-ref %outputs "out")))))))
+(define personal-code
+	(meta-package "personal-code"
+	              (list guix.guile-3.0-latest
+	                    base-guile-code
+	                    guile-syntax-highlighting
+	                    guix-code
+	                    guix-utilities
+	                    haunt-code
+	                    neovim-solarized8
+	                    vim-config
+	                    web-code)
+	              version: version
+	              home-page: home-page))
