@@ -323,7 +323,8 @@
 							(copy-recursively #$r7rs-src "./skyler/r7rs")))
 
 					(add-after 'install-documentation 'check
-						#$(check '((skyler r7rs test)
+						#$(check '((skyler csv test)
+						           (skyler r7rs test)
 						           (skyler serialization test)
 						           (skyler test time))))))))))
 
