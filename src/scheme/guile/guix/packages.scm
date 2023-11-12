@@ -17,10 +17,6 @@
 (read-set! keywords #f)
 
 (define-module (skyler guix packages)
-	; IMPORTANT: This module MUST NOT import any modules from the `(skyler ...)` namespace
-	;            other than build-utils, to avoid bootstrapping complexity. Modules from
-	;            guile core and guix are fine. Other third-party modules might be fine but
-	;            I haven't tried crossing that bridge yet.
 	#:use-module (skyler guix build-utils)
 
 	#:use-module (guix gexp)
@@ -203,14 +199,21 @@
 	(name "haunt-0.3.0")
 	(version "0.3.0")
 	(native-inputs (guix.modify-inputs (guix.package-native-inputs guix.haunt)
-	                                   (guix.prepend guix.autoconf guix.automake)))
+	                 (guix.prepend guix.autoconf guix.automake patches)))
 	(source (guix.origin
 		(method guix.git-fetch)
 		(uri (guix.git-reference
 			(url "https://git.dthompson.us/haunt.git")
 			(commit "d7cac9e175082829ebfd31185bc3811575f2deb5")))
 		(file-name (guix.git-file-name name version))
-		(sha256 (guix.base32 "1w703ic2pvjcfy3541a206iz5iljxpynvp21dcr6ls8mxzfk7g3x"))))))
+		(sha256 (guix.base32 "1w703ic2pvjcfy3541a206iz5iljxpynvp21dcr6ls8mxzfk7g3x"))))
+
+	(arguments (list
+		phases: #~(modify-phases %standard-phases
+			(add-after 'unpack 'custom-patch (lambda* (#:key inputs #:allow-other-keys)
+				(invoke #$(file-append guix.git "/bin/git")
+				        "apply"
+				        #$(file-append patches "/share/patches/haunt-only-save-filtered-posts.patch")))))))))
 
 (define neovim-solarized8
 	(guix.package
@@ -400,7 +403,7 @@
 			(propagated-inputs (list
 				base-guile-code
 				guix.gnupg
-				guix.haunt
+				haunt-0.3.0
 			))
 
 			(arguments (list

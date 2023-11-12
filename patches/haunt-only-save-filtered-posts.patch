@@ -1,0 +1,23 @@
+diff --git a/haunt/builder/blog.scm b/haunt/builder/blog.scm
+index 5087885..a84994e 100644
+--- a/haunt/builder/blog.scm
++++ b/haunt/builder/blog.scm
+@@ -28,6 +28,7 @@
+   #:use-module (srfi srfi-1)
+   #:use-module (srfi srfi-9)
+   #:use-module (srfi srfi-19)
++  #:use-module (srfi srfi-26)
+   #:use-module (haunt artifact)
+   #:use-module (haunt site)
+   #:use-module (haunt post)
+@@ -223,5 +224,9 @@ to POSTS-PER-PAGE posts on each page."
+                                                                      filtered-posts prefix))
+                                      sxml->html)))))))
+ 
+-    (append (map post->page posts)
++    (define matched-posts
++      (apply lset-union (cut string=? (post-file-name <>) (post-file-name <>))
++                        (map (cute <> posts) (map third collections))))
++
++    (append (map post->page matched-posts)
+             (append-map collection->page collections))))
