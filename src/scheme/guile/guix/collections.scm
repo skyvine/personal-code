@@ -102,6 +102,7 @@
 	#:use-module ((gnu services avahi)      #:prefix guix.)
 	#:use-module ((gnu services base)       #:prefix guix.)
 	#:use-module ((gnu services desktop)    #:prefix guix.)
+	#:use-module ((gnu services linux)      #:prefix guix.)
 	#:use-module ((gnu services mail)       #:prefix guix.)
 	#:use-module ((gnu services networking) #:prefix guix.)
 	#:use-module ((gnu services sysctl)     #:prefix guix.)
@@ -260,6 +261,30 @@
 (define xen-guest
 	(compose-fragments
 		(make <os-fragment>
+			services: (list
+				(guix.service guix.kernel-module-loader-service-type
+					; The list of modules here might be incomplete. It is based on the output of
+					; `lsmod` and `/lib/modules/$(uname -r)/modules.builtin` on Debian and Fedora
+					; guests.
+					'("xen_blkback"
+					  ; "xen_blkfront"          built-in module
+					  ; "xenbus"                built-in module
+					  ; "xenbus_probe_frontend" built-in module
+					  "xen_evtchn"
+					  "xen_fbfront"
+					  "xen_gntdev"
+					  ; "xen_netfront"          built-in module
+					  "xen_privcmd"
+
+					  ; The following modules only appear on 1 of the guests. This might
+					  ; have to do with distro-dependent functionality, or it might have
+					  ; to do with the way the guests are configured, although I have
+					  ; not substantially changed the relevant guests from the default
+					  ; configurations (no directly attached devices, etc, just changing
+					  ; the number of vCPUs and RAM limit).
+					  "xen_scsiback" ; only appears on Fedora guest
+					  "xenfs"        ; only appear on Debian guest
+					)))
 			file-systems: (list
 				(guix.file-system
 					(mount-point "/proc/xen")
