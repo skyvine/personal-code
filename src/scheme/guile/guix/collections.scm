@@ -92,6 +92,7 @@
 	#:use-module ((gnu packages man)                #:prefix guix.)
 	#:use-module ((gnu packages package-management) #:prefix guix.)
 	#:use-module ((gnu packages pciutils)           #:prefix guix.)
+	#:use-module ((gnu packages qubes)              #:prefix guix.)
 	#:use-module ((gnu packages shells)             #:prefix guix.)
 	#:use-module ((gnu packages texinfo)            #:prefix guix.)
 	#:use-module ((gnu packages tmux)               #:prefix guix.)
@@ -105,6 +106,7 @@
 	#:use-module ((gnu services linux)      #:prefix guix.)
 	#:use-module ((gnu services mail)       #:prefix guix.)
 	#:use-module ((gnu services networking) #:prefix guix.)
+	#:use-module ((gnu services qubes)      #:prefix guix.)
 	#:use-module ((gnu services sysctl)     #:prefix guix.)
 
 	#:use-module (skyler guix os-fragment)
@@ -120,17 +122,11 @@
 		; install onto a computer, or for building a disk image.
 
 		qubes-guest
-		; Signature: (qubes-guest ip)
-		;
-		; Arguments:
-		; ip: A string representing the IP address, including netmask.
-		;     For example, "10.137.0.200/32".
-		;
-		; Returns:
-		; Provides components required to run as a Qubes guest. Currently, this only supports
-		; qubes-specific networking. Guix will still run in a dedicated window and there is
-		; no secure copy/paste, etc. Features which come directly from virtualization, such as
-		; attaching a block device, work out-of-the-box.
+		; Provides components required to run a system as a Qubes guest with WIP integration.
+		; Currently provides:
+		; - Mounted xenfs
+		; - QubesDB service
+		; - Automatic network configuration
 
 		; Presentation Fragments
 		tty
@@ -292,18 +288,13 @@
 					(type        "xenfs"))))
 		foundation-common))
 
-(define (qubes-guest ip)
+(define qubes-guest
 	(compose-fragments
 		(make <os-fragment>
+			packages: (list guix.qubesdb)
 			services: (list
-				(guix.service guix.static-networking-service-type
-					(list
-						(guix.static-networking
-							(addresses    (list (guix.network-address (device "eth0")
-							                                          (value  ip))))
-							(routes       (list (guix.network-route (destination "default")
-							                                        (device      "eth0"))))
-							(name-servers (list "10.139.1.1" "10.139.1.2")))))))
+				(guix.service guix.qubesdb-service-type)
+				(guix.service guix.qubes-networking-service-type)))
 		xen-guest))
 
 ; Presentation Fragments

@@ -42,13 +42,7 @@
 
 	#:export (
 		guix-machine
-		; Signature: (guix-machine ip)
-		;
-		; Arguments:
-		; ip: As in the `qubes-guest` function in the (skyler guix collections) module.
-		;
-		; Returns:
-		; My primary guix machine
+		; The primary operating-system I use for daily development.
 
 		utility
 		; An operating-system suitable for use on a portable drive. This is inspired by the
@@ -59,7 +53,7 @@
 
 (read-set! keywords 'postfix)
 
-(define (guix-machine ip)
+(define guix-machine
 	(let* ((username        "user")
 	       (users           (cons (guix.user-account (name  username)
 	                                                 (uid   1000)
@@ -100,7 +94,7 @@
 				                    kernel-arguments: (cons "video=1920x1080"
 				                                            guix.%default-kernel-arguments))
 				; Foundation
-				(qubes-guest ip)
+				qubes-guest
 
 				; Presentation
 				(tty keyboard-layout users groups)
