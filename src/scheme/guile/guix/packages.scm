@@ -469,6 +469,51 @@
 				(add-after 'install-documentation 'check
 					#$(check '((skyler web test))))))))))
 
+(define utilities (let ((bin-dir (project-dir "bin")))
+	(guix.package
+		(name        "utilities")
+		(version     version)
+		(source      #f)
+		(description "Misc utilities I use.")
+		(synopsis    description)
+		(home-page   home-page)
+		(license     license)
+
+		(build-system      guix.guile-build-system)
+		(inputs            (list guix.guile-3.0-latest bin-dir))
+		(propagated-inputs (list guix.guile-lib))
+
+		(arguments (list
+			substitutable?: #f
+			phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
+				(replace 'unpack
+					(lambda* (key: inputs #:allow-other-keys)
+						(use-modules (guix build utils))
+						(copy-recursively #$bin-dir "./bin")))
+
+				(add-after 'install 'install-as-bin
+					(lambda* (key: inputs outputs #:allow-other-keys)
+									 (format #t "Outputs: ~s~%" outputs)
+						(use-modules (guix build utils) (ice-9 ftw))
+
+						(define (file-name->command-name filename)
+							(basename filename ".scm"))
+
+						(let* ((output  (assoc-ref outputs "out"))
+						       (bin-dir (string-append output "/bin"))
+						       (guile   (search-input-file inputs "/bin/guile")))
+							(define (make-bin-file command-name)
+								(call-with-output-file (string-append bin-dir "/" command-name)
+									(lambda (port)
+										(format port "#!~a -s~%!#~%" guile)
+										(format port "((@ (bin ~a) main) (cdr (command-line)))" command-name)
+										(chmod (string-append bin-dir "/" command-name) #o555))))
+
+							(mkdir-p bin-dir)
+							(map (compose make-bin-file file-name->command-name)
+							     (filter (lambda (filename) (string-suffix? ".scm" filename))
+													 (scandir #$bin-dir))))))))))))
+
 (define personal-code
 	(meta-package "personal-code"
 	              (list guix.guile-3.0-latest
@@ -478,6 +523,7 @@
 	                    guix-utilities
 	                    haunt-code
 	                    neovim-solarized8
+	                    utilities
 	                    vim-config
 	                    web-code)
 	              version: version
