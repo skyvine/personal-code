@@ -134,7 +134,8 @@
 										(copy-file source-filename target-filename)))
 								'("guix/build/utils.scm" "guix/base64.scm"))
 							(delete-file-recursively "source")
-							(chdir target-directory)))))))))
+							(chdir target-directory)))))
+			substitutable?: #f))))
 
 (define libtsm
 	(let ((commit "d66dd165a4a75d32c84a119bc5ec0da2aae52379"))
@@ -148,7 +149,8 @@
 				(uri       (guix.git-reference (url "https://github.com/Aetf/libtsm")
 				                               (commit commit)))
 				(sha256    (guix.base32 "1n35blpl1yxlxib0v72cbycx2y6lsrq2asmayw7xq476ana6pcwd"))
-				(file-name (guix.git-file-name "libtsm" version)))))))
+				(file-name (guix.git-file-name "libtsm" version))))
+			(arguments (cons* substitutable?: #f (guix.package-arguments guix.libtsm))))))
 
 (define kmscon
 	(let ((commit "1f40bee5e692be6c8c571c06ec3ddb8896badbd9"))
@@ -188,6 +190,7 @@
 			))
 
 			(arguments `(
+				substitutable?: #f
 				; the remove-sytemd phase from guix's definition references files that have been
 				; removed in the updated Aetf version; removing systemd is a little more
 				; complicated now that meson is in use, and since I'm already using a different
@@ -233,6 +236,7 @@
 			(sha256 (guix.base32 "1pqspr68y7djyjq1l3hmk438kw4pr8wq438s66657d5rdp2bk0rf"))))
 
 		(arguments '(
+			substitutable?: #f
 			install-plan: '(
 				("colors"    "share/nvim/site/")
 				("doc"       "share/nvim/site/")
@@ -251,7 +255,8 @@
 			(sha256 (guix.base32 "01571piav96kw32g3k8ccfand4vp7x92rrfdnybaghjfa2bay2qj"))))
 		(native-inputs (cons* `("autoconf" ,guix.autoconf)
 		                      `("automake" ,guix.automake)
-		                      (guix.package-native-inputs guix.guile-gnutls)))))
+		                      (guix.package-native-inputs guix.guile-gnutls)))
+		(arguments (cons* substitutable?: #f (guix.package-arguments guix.guile-gnutls)))))
 
 ; Local Packages
 (define project-root
@@ -277,6 +282,7 @@
 		(build-system guix.copy-build-system)
 		(inputs (list patches-dir))
 		(arguments (list
+			substitutable?: #f
 			phases: '(modify-phases (@ (guix build copy-build-system) %standard-phases)
 			        	(delete 'unpack))
 			install-plan: #~(list (list #$patches-dir "share/patches")))))))
@@ -293,6 +299,7 @@
 
 		(build-system guix.copy-build-system)
 		(arguments (list
+			substitutable?: #f
 			phases: #~(modify-phases (@ (guix build copy-build-system) %standard-phases)
 			        	(delete 'unpack))
 			install-plan: #~'((#$config-dir "/etc/xdg/nvim")))))))
@@ -313,6 +320,7 @@
 			(inputs       (list guix.guile-3.0-latest guile-src r7rs-src))
 
 			(arguments (list
+				substitutable?: #f
 				modules: `((guix build utils) ,@guix.%guile-build-system-modules)
 
 				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
@@ -343,6 +351,7 @@
 
 		(build-system guix.copy-build-system)
 		(arguments (list
+			substitutable?: #f
 			phases: #~(modify-phases (@ (guix build copy-build-system) %standard-phases)
 			        	(delete 'unpack))
 			install-plan: #~'((#$vim-dir "etc/xdg/nvim")))))))
@@ -370,6 +379,8 @@
 			(arguments (list
 				; don't compile anything, we always want to use the system's guix, not some snapshot
 				not-compiled-file-regexp: ".*"
+
+				substitutable?: #f
 
 				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
 					(delete 'unpack)
@@ -407,6 +418,7 @@
 			))
 
 			(arguments (list
+				substitutable?: #f
 				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
 					(delete 'unpack)
 					(add-before 'set-locale-path 'fix-paths
@@ -438,6 +450,7 @@
 		))
 
 		(arguments (list
+			substitutable?: #f
 			phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
 				(delete 'unpack)
 				(add-before 'set-locale-path 'fix-paths
