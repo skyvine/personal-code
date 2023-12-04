@@ -134,6 +134,7 @@
 							(chdir target-directory)))))
 			substitutable?: #f))))
 
+; FIXME: validate hash
 (define libtsm
 	(let ((commit "d66dd165a4a75d32c84a119bc5ec0da2aae52379"))
 		(guix.package
@@ -149,6 +150,7 @@
 				(file-name (guix.git-file-name "libtsm" version))))
 			(arguments (cons* substitutable?: #f (guix.package-arguments guix.libtsm))))))
 
+; FIXME: validate hash
 (define kmscon
 	(let ((commit "1f40bee5e692be6c8c571c06ec3ddb8896badbd9"))
 		(guix.package
@@ -194,6 +196,7 @@
 				; repository I just made the changes there.
 				phases: (@ (guix build meson-build-system) %standard-phases))))))
 
+; FIXME: validate hash
 (define haunt-0.3.0 (guix.package
 	(inherit guix.haunt)
 	(name "haunt-0.3.0")
@@ -219,6 +222,7 @@
 							 #$(file-append patches "/share/patches/haunt-add-repl-like-error-handling.patch")
 							 #$(file-append patches "/share/patches/haunt-add-site-global-metadata.patch"))))))))))
 
+; FIXME: validate hash
 (define neovim-solarized8
 	(guix.package
 		(name        "neovim-solarized8")
