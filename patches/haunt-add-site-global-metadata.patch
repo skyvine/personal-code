@@ -1,0 +1,52 @@
+diff --git a/haunt/site.scm b/haunt/site.scm
+index d656943..c6ff652 100644
+--- a/haunt/site.scm
++++ b/haunt/site.scm
+@@ -45,6 +45,7 @@
+             site-build-directory
+             site-absolute-build-directory
+             site-default-metadata
++            site-global-metadata
+             site-make-slug
+             site-readers
+             site-builders
+@@ -58,7 +59,7 @@
+ 
+ (define-record-type <site>
+   (make-site title domain scheme posts-directory file-filter build-directory
+-             default-metadata make-slug readers builders publishers)
++             default-metadata global-metadata make-slug readers builders publishers)
+   site?
+   (title site-title)
+   (domain site-domain)
+@@ -67,6 +68,7 @@
+   (file-filter site-file-filter)
+   (build-directory site-build-directory)
+   (default-metadata site-default-metadata)
++  (global-metadata site-global-metadata)
+   (make-slug site-make-slug)
+   (readers site-readers)
+   (builders site-builders)
+@@ -80,6 +82,7 @@
+                (file-filter default-file-filter)
+                (build-directory "site")
+                (default-metadata '())
++               (global-metadata '())
+                (make-slug post-slug)
+                (readers '())
+                (builders '())
+@@ -96,12 +99,13 @@ default.
+ BUILD-DIRECTORY: The directory that generated pages are stored in
+ DEFAULT-METADATA: An alist of arbitrary default metadata for posts
+ whose keys are symbols
++GLOBAL-METADATA: An alist of arbitrary values for site construction.
+ MAKE-SLUG: A procedure generating a file name slug from a post
+ READERS: A list of reader objects for processing posts
+ BUILDERS: A list of procedures for building pages from posts
+ PUBLISHERS: A list of publisher objects for upload site contents to a remote location"
+   (make-site title domain scheme posts-directory file-filter build-directory
+-             default-metadata make-slug readers builders publishers))
++             default-metadata global-metadata make-slug readers builders publishers))
+ 
+ (define (site-post-slug site post)
+   "Return a slug string for POST using the slug generator for SITE."

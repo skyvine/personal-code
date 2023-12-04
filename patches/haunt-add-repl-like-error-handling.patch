@@ -1,0 +1,19 @@
+diff --git a/haunt/ui/build.scm b/haunt/ui/build.scm
+index 56d896c..e7fda87 100644
+--- a/haunt/ui/build.scm
++++ b/haunt/ui/build.scm
+@@ -28,6 +28,7 @@
+   #:use-module (haunt site)
+   #:use-module (haunt config)
+   #:use-module (haunt ui)
++  #:use-module (system repl error-handling)
+   #:export (haunt-build))
+ 
+ (define (show-help)
+@@ -57,5 +58,5 @@ Compile the site defined in the current directory.~%")
+   (let* ((opts (simple-args-fold args %options %default-options))
+          (site (load-config (assq-ref opts 'config))))
+     (format #t "building pages in '~a'...~%" (site-build-directory site))
+-    (build-site site)
++    (call-with-error-handling (lambda () (build-site site)))
+     (display "build completed successfully\n")))

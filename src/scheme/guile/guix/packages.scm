@@ -212,11 +212,15 @@
 		(sha256 (guix.base32 "1w703ic2pvjcfy3541a206iz5iljxpynvp21dcr6ls8mxzfk7g3x"))))
 
 	(arguments (list
+		substitutable?: #f
 		phases: #~(modify-phases %standard-phases
 			(add-after 'unpack 'custom-patch (lambda* (#:key inputs #:allow-other-keys)
-				(invoke #$(file-append guix.git "/bin/git")
-				        "apply"
-				        #$(file-append patches "/share/patches/haunt-only-save-filtered-posts.patch")))))))))
+				(map (lambda (patch) 
+				     	(invoke #$(file-append guix.git "/bin/git") "apply" patch))
+				     (list
+							 #$(file-append patches "/share/patches/haunt-only-save-filtered-posts.patch")
+							 #$(file-append patches "/share/patches/haunt-add-repl-like-error-handling.patch")
+							 #$(file-append patches "/share/patches/haunt-add-site-global-metadata.patch"))))))))))
 
 (define neovim-solarized8
 	(guix.package
