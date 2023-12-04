@@ -94,9 +94,6 @@
 		; A package containing all of my guix configuration, including helpers for defining
 		; machines for specific uses, packages, and everything else that depends on guix.
 
-		haunt-code
-		; A package containing the helper functions I use for generating web pages with Haunt.
-
 		vim-config
 		; A package containing my personal vim configuration
 
@@ -394,43 +391,6 @@
 						(lambda* (key: inputs #:allow-other-keys)
 							(use-modules (guix build utils))
 							(copy-recursively #$guix-dir "./skyler/guix")))
-
-					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
-
-(define haunt-code
-	(let ((haunt-dir (project-dir "src/scheme/guile/haunt"))
-	      (upgrade-guile-gnutls (guix.package-input-rewriting
-	      	`((,guix.guile-gnutls ,guile-gnutls-3.7.14))))
-				)
-		(guix.package
-			(name        "haunt-code")
-			(version     version)
-			(source      #f)
-			(description "Code which supports my website.")
-			(synopsis    description)
-			(home-page   home-page)
-			(license     license)
-
-			(build-system  guix.guile-build-system)
-			(native-inputs (list patches))
-			(inputs        (list guix.guile-3.0-latest haunt-dir))
-
-			(propagated-inputs (list
-				base-guile-code
-				guix.gnupg
-				haunt-0.3.0
-			))
-
-			(arguments (list
-				substitutable?: #f
-				phases: #~(modify-phases (@ (guix build guile-build-system) %standard-phases)
-					(delete 'unpack)
-					(add-before 'set-locale-path 'fix-paths
-						; Paths in the filesystem are sensible for editing, but not a useful
-						; module structure inside an actual implementation
-						(lambda* (key: inputs #:allow-other-keys)
-							(use-modules (guix build utils))
-							(copy-recursively #$haunt-dir "./skyler/haunt")))
 
 					(add-after 'fix-paths 'inject-store-paths #$inject-store-paths)))))))
 
