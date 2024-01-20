@@ -1,8 +1,14 @@
 diff --git a/haunt/ui/build.scm b/haunt/ui/build.scm
-index 56d896c..e7fda87 100644
+index 56d896c..960cd36 100644
 --- a/haunt/ui/build.scm
 +++ b/haunt/ui/build.scm
-@@ -28,6 +28,7 @@
+@@ -23,11 +23,13 @@
+ ;;; Code:
+ 
+ (define-module (haunt ui build)
++  #:use-module (srfi srfi-1)
+   #:use-module (srfi srfi-37)
+   #:use-module (ice-9 match)
    #:use-module (haunt site)
    #:use-module (haunt config)
    #:use-module (haunt ui)
@@ -10,10 +16,55 @@ index 56d896c..e7fda87 100644
    #:export (haunt-build))
  
  (define (show-help)
-@@ -57,5 +58,5 @@ Compile the site defined in the current directory.~%")
+@@ -36,13 +38,26 @@ Compile the site defined in the current directory.~%")
+   (show-common-options-help)
+   (newline)
+   (display "
++  --error-handling       what to do if there is a error when building (\"none\" or \"repl\")")
++  (display "
+   -h, --help             display this help and exit")
+   (display "
+   -V, --version          display version information and exit")
+   (newline))
+ 
+ (define %options
+-  (cons* (option '(#\h "help") #f #f
++  (cons* (option '("error-handling") #t #f
++                 (lambda (opt name arg result)
++                   (define handler
++                     (match arg
++                       ("none" (lambda (thunk) (thunk)))
++                       ("repl" call-with-error-handling)
++                       (_
++                        (format #t "Unrecognized option for --error-handling: ~a~%" arg)
++                        (display "Must be \"none\" or \"repl\"\n")
++                        (exit 1))))
++                   (alist-cons 'error-handling handler result)))
++         (option '(#\h "help") #f #f
+                  (lambda _
+                    (show-help)
+                    (exit 0)))
+@@ -51,11 +66,18 @@ Compile the site defined in the current directory.~%")
+                    (show-version-and-exit "haunt build")))
+          %common-options))
+ 
+-(define %default-options %default-common-options)
++(define %default-options
++  (append `((error-handling . ,(lambda (thunk) (thunk))))
++          %default-common-options))
++
++(define (load-config-and-build opts)
++  (lambda ()
++    (let ((site (load-config (assq-ref opts 'config))))
++      (format #t "building pages in '~a'...~%" (site-build-directory site))
++      (build-site site)
++      (display "build completed successfully\n"))))
+ 
+ (define (haunt-build . args)
    (let* ((opts (simple-args-fold args %options %default-options))
-          (site (load-config (assq-ref opts 'config))))
-     (format #t "building pages in '~a'...~%" (site-build-directory site))
+-         (site (load-config (assq-ref opts 'config))))
+-    (format #t "building pages in '~a'...~%" (site-build-directory site))
 -    (build-site site)
-+    (call-with-error-handling (lambda () (build-site site)))
-     (display "build completed successfully\n")))
+-    (display "build completed successfully\n")))
++         (error-handling (assq-ref opts 'error-handling)))
++    (error-handling (load-config-and-build opts))))

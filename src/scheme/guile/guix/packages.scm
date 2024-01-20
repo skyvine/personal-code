@@ -207,9 +207,9 @@
 		(method guix.git-fetch)
 		(uri (guix.git-reference
 			(url "https://git.dthompson.us/haunt.git")
-			(commit "d7cac9e175082829ebfd31185bc3811575f2deb5")))
+			(commit "04a0bab716edc23f6f7fc4f7d7ef002e8381892b")))
 		(file-name (guix.git-file-name name version))
-		(sha256 (guix.base32 "1w703ic2pvjcfy3541a206iz5iljxpynvp21dcr6ls8mxzfk7g3x"))))
+		(sha256 (guix.base32 "0ra45xshvw05c6l5gr7ahrl308g48wh2cwi3s1ybal64ybv8wap9"))))
 
 	(arguments (list
 		substitutable?: #f
@@ -218,9 +218,8 @@
 				(map (lambda (patch) 
 				     	(invoke #$(file-append guix.git "/bin/git") "apply" patch))
 				     (list
-							 #$(file-append patches "/share/patches/haunt-only-save-filtered-posts.patch")
-							 #$(file-append patches "/share/patches/haunt-add-repl-like-error-handling.patch")
-							 #$(file-append patches "/share/patches/haunt-add-site-global-metadata.patch"))))))))))
+				     	#$(file-append patches "/share/patches/haunt-add-repl-like-error-handling.patch")
+				     	#$(file-append patches "/share/patches/haunt-add-site-global-metadata.patch"))))))))))
 
 ; FIXME: validate hash
 (define neovim-solarized8
@@ -485,7 +484,7 @@
 	                    guile-syntax-highlighting
 	                    guix-code
 	                    guix-utilities
-	                    haunt-code
+	                    haunt-0.3.0
 	                    neovim-solarized8
 	                    utilities
 	                    vim-config
