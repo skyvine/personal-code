@@ -83,6 +83,7 @@
 	#:use-module ((gnu packages compression)        #:prefix guix.)
 	#:use-module ((gnu packages cryptsetup)         #:prefix guix.)
 	#:use-module ((gnu packages file)               #:prefix guix.)
+	#:use-module ((gnu packages gnupg)              #:prefix guix.)
 	#:use-module ((gnu packages glib)               #:prefix guix.)
 	#:use-module ((gnu packages gnome)              #:prefix guix.)
 	#:use-module ((gnu packages guile)              #:prefix guix.)
@@ -380,6 +381,7 @@
 			guix.diffutils
 			guix.e2fsprogs ; mkfs.*
 			guix.file
+			guix.gnupg
 			guix.inetutils ; ping & traceroute
 			guix.info-reader
 			guix.iproute
@@ -389,6 +391,7 @@
 			guix.procps ; ps command
 			guix.psmisc ; fuser
 			guix.the-silver-searcher
+			guix.tcpdump
 			guix.tmux
 			guix.tree
 			guix.usbutils
