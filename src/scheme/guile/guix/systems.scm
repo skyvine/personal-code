@@ -12,7 +12,7 @@
 ; program. If not, see <https://www.gnu.org/licenses>.
 
 ; # Documentation
-; Contains helpers for creating operating-system definitions based on use-case.
+; Definitions for operating-systems I find useful.
 
 (read-set! keywords #f)
 
@@ -21,7 +21,6 @@
 	#:use-module (skyler standard)
 
 	#:use-module (skyler guix collections)
-	#:use-module (skyler guix os-fragment)
 
 	#:use-module ((gnu bootloader)          #:prefix guix.)
 	#:use-module ((gnu bootloader grub)     #:prefix guix.)
@@ -64,35 +63,33 @@
 	       (groups          (cons (guix.user-group (name username) (id 1000))
 	                              guix.%base-groups))
 	       (keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape"))))
-		(compose-os
-			include-defaults?: #f
+		(guix.operating-system
+			(host-name "nest")
+			(timezone  "US/Pacific")
+			(locale    "en_US.utf8")
 
-			host-name: "nest"
-			timezone:  "US/Pacific"
-			locale:    "en_US.utf8"
+			(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
+			                                           (targets '("/dev/xvda"))))
+			(kernel-arguments (cons "video=1920x1080"
+			                        guix.%default-kernel-arguments))
 
-			bootloader: (guix.bootloader-configuration (bootloader guix.grub-bootloader)
-			                                           (targets '("/dev/xvda")))
+			(file-systems (list (guix.file-system
+					(device (guix.file-system-label "GUIX_ROOT"))
+					(mount-point "/")
+					(type "ext4"))))
 
-			fragments: (list
-				(make <os-fragment> users:  users
-				                    groups: groups
+			(users  users)
+			(groups groups)
 
-				                    file-systems: (list (guix.file-system
-				                    	(device (guix.file-system-label "GUIX_ROOT"))
-				                    	(mount-point "/")
-				                    	(type "ext4")))
+			(services (list
+				(guix.service guix.openssh-service-type
+					(guix.openssh-configuration
+						(openssh                            guix.openssh-sans-x)
+						(password-authentication?           #f)
+						(challenge-response-authentication? #f)
+						(use-pam?                           #f)))))
 
-				                    services: (list
-				                    	(guix.service guix.openssh-service-type
-				                    		(guix.openssh-configuration
-				                    			(openssh                            guix.openssh-sans-x)
-				                    			(password-authentication?           #f)
-				                    			(challenge-response-authentication? #f)
-				                    			(use-pam?                           #f))))
-
-				                    kernel-arguments: (cons "video=1920x1080"
-				                                            guix.%default-kernel-arguments))
+			(fragments (list
 				; Foundation
 				qubes-guest
 
@@ -103,15 +100,16 @@
 				compression
 				development
 				(email)
-				terminal-utils))))
+				terminal-utils)))))
 
 (define utility
 	(let ((users (cons (guix.user-account (name "raven")
 	                                        (uid 1000)
 	                                        (group name)
-	                                        (supplementary-groups '("wheel" "audio" "video"))
-	                                        (password "")
-	                                        )
+	                                        (supplementary-groups '("wheel"
+	                                                                "audio"
+	                                                                "video"))
+	                                        (password ""))
 	                   guix.%base-user-accounts))
 	      (groups (cons (guix.user-group (name "raven") (id 1000))
 	                    guix.%base-groups))
@@ -119,24 +117,21 @@
 	      (file-systems (list (guix.file-system (mount-point "/")
 	                          (device (guix.file-system-label "Guix_image"))
 	                          (type "ext4")))))
-		(compose-os
-			include-defaults?: #f
+		(guix.operating-system
+			(host-name "roost")
+			(timezone  "US/Pacific")
+			(locale    "en_US.utf8")
 
-			host-name: "roost"
-			timezone:  "US/Pacific"
-			locale:    "en_US.utf8"
+			(users users)
+			(groups groups)
+			(file-systems file-systems)
 
-			; this is the bootloader that the installation OS uses, probably what I want?
-			bootloader: (guix.bootloader-configuration (bootloader guix.grub-bootloader)
-			                                           (targets '("/dev/sda")))
+			(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
+			                                           (targets '("/dev/sda"))))
 
-			keyboard-layout: keyboard-layout
+			(keyboard-layout keyboard-layout)
 
-			fragments: (list
-				(make <os-fragment> users:        users
-				                    groups:       groups
-				                    file-systems: file-systems
-				)
+			(fragments (list
 				; Foundation
 				bare-metal
 
@@ -145,4 +140,4 @@
 
 				; Application
 				compression
-				terminal-utils))))
+				terminal-utils)))))

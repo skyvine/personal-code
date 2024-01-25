@@ -12,13 +12,10 @@
 ; program. If not, see <https://www.gnu.org/licenses>.
 
 ; # Documentation
-; This provides a set of <os-fragment>s which help me manage different installations in a
-; way that is consistent where it makes sense and specific where it makes sense. All of
-; the fragments can be divided into 3 categories: foundation, presentation, and
-; application.
-;
-; Reminder: The <os-fragment> API is unstable. And bad. Fixing that API should not impact
-;           the set of exported symbols in this module.
+; This provides a set of operating-system-fragments which help me manage different
+; installations in a way that is consistent where it makes sense and specific where it
+; makes sense. All of the fragments can be divided into 3 categories: foundation,
+; presentation, and application.
 ;
 ; ## Foundation Fragments 
 ; A foundation fragment supplies the core components required to make a system function in
@@ -58,8 +55,6 @@
 
 	#:use-module (ice-9 optargs)
 	#:use-module (oop goops)
-	#:use-module ((skyler guix os-fragment) #:select (<os-fragment>))
-	#:use-module ((skyler guix os-fragment) #:prefix os-fragment.)
 
 	#:use-module ((gnu packages)                    #:prefix guix.)
 	#:use-module ((gnu services)                    #:prefix guix.)
@@ -71,6 +66,7 @@
 	#:use-module ((guix config)                     #:prefix guix.)
 	#:use-module ((guix profiles)                   #:prefix guix.)
 	#:use-module ((guix gexp)                       #:prefix guix.)
+	#:use-module ((gnu system)                      #:prefix guix.)
 	#:use-module ((gnu system pam)                  #:prefix guix.)
 	#:use-module ((gnu system shadow)               #:prefix guix.)
 	#:use-module ((guix transformations)            #:prefix guix.)
@@ -110,7 +106,6 @@
 	#:use-module ((gnu services qubes)      #:prefix guix.)
 	#:use-module ((gnu services sysctl)     #:prefix guix.)
 
-	#:use-module (skyler guix os-fragment)
 	#:use-module (skyler guix packages)
 	#:use-module (skyler guix services)
 
@@ -181,24 +176,24 @@
 ;; Helpers
 ;;; Things which are common to all foundation fragments. Avoid repeating myself.
 (define foundation-common
-	(make <os-fragment>
-		kernel-arguments:   guix.%default-kernel-arguments
-		firmware:           guix.%base-firmware
-		skeletons:          (guix.default-skeletons)
-		locale-definitions: guix.%default-locale-definitions
-		locale-libcs:       guix.%default-locale-libcs
-		pam-services:       (guix.base-pam-services)
-		setuid-programs:    guix.%setuid-programs
+	(guix.operating-system-fragment
+		(kernel-arguments-fragment   guix.%default-kernel-arguments)
+		(firmware-fragment           guix.%base-firmware)
+		(skeletons-fragment          (guix.default-skeletons))
+		(locale-definitions-fragment guix.%default-locale-definitions)
+		(locale-libcs-fragment       guix.%default-locale-libcs)
+		(pam-services-fragment       (guix.base-pam-services))
+		(setuid-programs-fragment    guix.%setuid-programs)
 
-		packages: (list
+		(packages-fragment (list
 			guix.eudev ; sets up /dev directory; eudev is the gentoo fork of plain udev
 			guix.glibc-locales
 			guix.kmod ; kernel module utils: modprobe, etc
 			guix.nss-certs ; required for https
 			guix.shadow
-			guix.sudo)
+			guix.sudo))
 
-		services: (list
+		(services-fragment (list
 			(guix.service guix.guix-service-type
 				(guix.guix-configuration
 				(authorize-key? #t)
@@ -228,9 +223,9 @@
 					; helps regulatory compliance for wireless signals
 					guix.crda))))
 			(guix.service guix.upower-service-type) ; power monitoring, inc. battery status
-			(guix.service guix.urandom-seed-service-type))
+			(guix.service guix.urandom-seed-service-type)))
 
-		file-systems: guix.%base-file-systems
+		(file-systems-fragment guix.%base-file-systems)
 			; TODO: I prefer /tmp to be tmpfs, but this can cause problems when substitutes are
 			; not available (particularly common during development =) because builds can be
 			; large. Will figure out a better solution later.
@@ -245,20 +240,24 @@
 		))
 
 (define bare-metal
-	(compose-fragments
-		(make <os-fragment>
-			packages: (list guix.network-manager)
-			services: (list
+	(guix.operating-system-fragment
+		(inherit foundation-common)
+		(packages-fragment (append
+			(list guix.network-manager)
+			(guix.operating-system-packages-fragment foundation-common)))
+		(services-fragment (append
+			(list
 				(guix.service guix.avahi-service-type) ; DNS discovery
 				(guix.service guix.network-manager-service-type)
 				; wpa-supplicant IS an external NetworkManager dependency
-				(guix.service guix.wpa-supplicant-service-type)))
-		foundation-common))
+				(guix.service guix.wpa-supplicant-service-type))
+			(guix.operating-system-user-services-fragment foundation-common)))))
 
 (define xen-guest
-	(compose-fragments
-		(make <os-fragment>
-			services: (list
+	(guix.operating-system-fragment
+		(inherit foundation-common)
+		(services-fragment (append
+			(list
 				(guix.service guix.kernel-module-loader-service-type
 					; The list of modules here might be incomplete. It is based on the output of
 					; `lsmod` and `/lib/modules/$(uname -r)/modules.builtin` on Debian and Fedora
@@ -282,21 +281,26 @@
 					  "xen_scsiback" ; only appears on Fedora guest
 					  "xenfs"        ; only appear on Debian guest
 					)))
-			file-systems: (list
+			(guix.operating-system-user-services-fragment foundation-common)))
+		(file-systems-fragment (append
+			(list
 				(guix.file-system
 					(mount-point "/proc/xen")
 					(device      "xenfs")
-					(type        "xenfs"))))
-		foundation-common))
+					(type        "xenfs")))
+			(guix.operating-system-file-systems-fragment foundation-common)))))
 
 (define qubes-guest
-	(compose-fragments
-		(make <os-fragment>
-			packages: (list guix.qubesdb)
-			services: (list
+	(guix.operating-system-fragment
+		(inherit xen-guest)
+		(packages-fragment (append
+			(list guix.qubesdb)
+			(guix.operating-system-packages-fragment xen-guest)))
+		(services-fragment (append
+			(list
 				(guix.service guix.qubesdb-service-type)
-				(guix.service guix.qubes-networking-service-type)))
-		xen-guest))
+				(guix.service guix.qubes-networking-service-type))
+			(guix.operating-system-user-services-fragment xen-guest)))))
 
 ; Presentation Fragments
 ;;; FIXME: this should not require foreknowledge of the existing users and groups. See the
@@ -328,50 +332,50 @@
 	 		                      " the user definition.")))
 	 	(number->string (guix.user-account-uid user)))))
 
-		(make <os-fragment>
-				services: (cons
-					(guix.service guix.login-service-type)
-					(map (lambda (tty)
-						(guix.service kmscon-with-configurable-resolution-service-type
-							(kmscon-with-configurable-resolution-configuration
-								(virtual-terminal  (string-append "tty" (number->string tty)))
-								(screen-resolution (cons 1920 1080))
-								(login-program     (guix.file-append guix.shadow "/bin/login"))
-								(keyboard-layout   keyboard-layout))))
-						'(1 2 3 4 5 6 7 8 9)))
-				; Provide the XDG_RUNTIME_DIR which many programs implicitly depend on. This is in
-				; the presentation layer because I have previously seen a conflict when trying to
-				; use this alongside a full desktop enviornment. Looking at the guix source again,
-				; this is managed by the greetd service which should be able to launch kmscon just
-				; as easily as anything else, so perhaps this can be revisited. This concern
-				; should NOT be in the presentation layer. It also feels a bit off to call it a
-				; foundation component. This is why it seems like there should be something in the
-				; middle, because desktops inevitably end up assuming common attributes about
-				; their environment (such as the existence of certain filesystems or serivces)
-				; which are in principle independent of the physical/virtualized context they are
-				; running in, which is most properly the concern of the foundation layer.
-				file-systems: (map (lambda (user)
-					(let ((uid (get-user-uid user))
-					      (gid (get-user-gid user groups)))
-						(guix.file-system
-							; I don't know if this is normally a tmpfs, but the XDG basedir standard
-							; says that it MUST not survive a reboot, so being tmpfs shouldn't cause any
-							; problems. This is technically not compliant because it also says that the
-							; contents MUST be removed if the user fully logs out (implicitly, even if
-							; the system remains powered on) and I'm not doing that. It looks like guix
-							; has a predefined greetd configuration to handle this correctly.
-							(device              "tmpfs")
-							(mount-point         (string-append "/run/user/" uid))
-							(type                "tmpfs")
-							(check?              #f)
-							(options             (format #f "mode=0700,uid=~a,gid=~a" uid gid))
-							(create-mount-point? #t))))
-					(filter (negate guix.user-account-system?) users)))))
+		(guix.operating-system-fragment
+			(services-fragment (cons
+				(guix.service guix.login-service-type)
+				(map (lambda (tty)
+					(guix.service kmscon-with-configurable-resolution-service-type
+						(kmscon-with-configurable-resolution-configuration
+							(virtual-terminal  (string-append "tty" (number->string tty)))
+							(screen-resolution (cons 1920 1080))
+							(login-program     (guix.file-append guix.shadow "/bin/login"))
+							(keyboard-layout   keyboard-layout))))
+					'(1 2 3 4 5 6 7 8 9))))
+			; Provide the XDG_RUNTIME_DIR which many programs implicitly depend on. This is in
+			; the presentation layer because I have previously seen a conflict when trying to
+			; use this alongside a full desktop enviornment. Looking at the guix source again,
+			; this is managed by the greetd service which should be able to launch kmscon just
+			; as easily as anything else, so perhaps this can be revisited. This concern
+			; should NOT be in the presentation layer. It also feels a bit off to call it a
+			; foundation component. This is why it seems like there should be something in the
+			; middle, because desktops inevitably end up assuming common attributes about
+			; their environment (such as the existence of certain filesystems or serivces)
+			; which are in principle independent of the physical/virtualized context they are
+			; running in, which is most properly the concern of the foundation layer.
+			(file-systems-fragment (map (lambda (user)
+				(let ((uid (get-user-uid user))
+				      (gid (get-user-gid user groups)))
+					(guix.file-system
+						; I don't know if this is normally a tmpfs, but the XDG basedir standard
+						; says that it MUST not survive a reboot, so being tmpfs shouldn't cause any
+						; problems. This is technically not compliant because it also says that the
+						; contents MUST be removed if the user fully logs out (implicitly, even if
+						; the system remains powered on) and I'm not doing that. It looks like guix
+						; has a predefined greetd configuration to handle this correctly.
+						(device              "tmpfs")
+						(mount-point         (string-append "/run/user/" uid))
+						(type                "tmpfs")
+						(check?              #f)
+						(options             (format #f "mode=0700,uid=~a,gid=~a" uid gid))
+						(create-mount-point? #t))))
+				(filter (negate guix.user-account-system?) users))))))
 
 ; Application Fragments
 (define* terminal-utils (let ()
-	(make <os-fragment>
-		packages: (list
+	(guix.operating-system-fragment
+		(packages-fragment (list
 			guix.guile-3.0-latest
 			guix.guile-colorized
 			guix.guile-readline
@@ -404,27 +408,27 @@
 				'((with-patch .
 				   "neovim=%%patches share/patches/neovim-fixed-width-tabs.patch%%")))
 				guix.neovim)
-			neovim-solarized8
-		)
-)))
+			neovim-solarized8)))))
 
-(define compression (make <os-fragment>
-	packages: (list
-		guix.bzip2
-		guix.gzip
-		guix.lzip
-		guix.tar ; reducing inode usage could technically be considered compression :P
-		guix.xz
-		guix.zip
+(define compression
+	(guix.operating-system-fragment
+		(packages-fragment (list
+			guix.bzip2
+			guix.gzip
+			guix.lzip
+			guix.tar ; reducing inode usage could technically be considered compression :P
+			guix.xz
+			guix.zip
 
-		guix.atool)))
+		guix.atool))))
 
-(define development (make <os-fragment>
-	packages: (list
-		guix.git
-		guix.man-pages))) ; linux & c man pages
+(define development
+	(guix.operating-system-fragment
+		(packages-fragment (list
+			guix.git
+			guix.man-pages)))) ; linux & c man pages
 
 (define* (email key: (exim-config (guix.exim-configuration)) (aliases '()))
-	(make <os-fragment>
-		services: (list (guix.service guix.exim-service-type exim-config)
-		                (guix.service guix.mail-aliases-service-type aliases))))
+	(guix.operating-system-fragment
+		(services-fragment (list (guix.service guix.exim-service-type exim-config)
+		                (guix.service guix.mail-aliases-service-type aliases)))))
