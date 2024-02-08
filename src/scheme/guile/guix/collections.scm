@@ -256,6 +256,7 @@
 (define xen-guest
 	(guix.operating-system-fragment
 		(inherit foundation-common)
+		(packages-fragment (list (list guix.xen "tools")))
 		(services-fragment (append
 			(list
 				(guix.service guix.kernel-module-loader-service-type
@@ -293,9 +294,11 @@
 (define qubes-guest
 	(guix.operating-system-fragment
 		(inherit xen-guest)
-		(packages-fragment (append
-			(list guix.qubesdb)
-			(guix.operating-system-packages-fragment xen-guest)))
+		(packages-fragment
+			; Leaving out the xen-guest packages entirely because it only provides xen, which is
+			; overridden by qubes-xen. If xen-guest gets more packages added then this needs to
+			; be updated too, and needs to filter out the primary xen package.
+			(list guix.qubesdb (list guix.qubes-xen "tools")))
 		(services-fragment (append
 			(list
 				(guix.service guix.qubesdb-service-type)
