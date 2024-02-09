@@ -95,6 +95,7 @@
 	#:use-module ((gnu packages tmux)               #:prefix guix.)
 	#:use-module ((gnu packages vim)                #:prefix guix.)
 	#:use-module ((gnu packages version-control)    #:prefix guix.)
+	#:use-module ((gnu packages virtualization)     #:prefix guix.)
 	#:use-module ((gnu packages wget)               #:prefix guix.)
 
 	#:use-module ((gnu services avahi)      #:prefix guix.)
