@@ -53,6 +53,7 @@
 
 (define-module (skyler guix collections)
 
+	#:use-module (ice-9 match)
 	#:use-module (ice-9 optargs)
 	#:use-module (oop goops)
 
@@ -64,6 +65,7 @@
 	#:use-module ((gnu system locale)               #:prefix guix.)
 	#:use-module ((guix channels)                   #:prefix guix.)
 	#:use-module ((guix config)                     #:prefix guix.)
+	#:use-module ((guix packages)                   #:prefix guix.)
 	#:use-module ((guix profiles)                   #:prefix guix.)
 	#:use-module ((guix gexp)                       #:prefix guix.)
 	#:use-module ((gnu system)                      #:prefix guix.)
@@ -257,7 +259,9 @@
 (define xen-guest
 	(guix.operating-system-fragment
 		(inherit foundation-common)
-		(packages-fragment (list (list guix.xen "tools")))
+		(packages-fragment (cons
+			(list guix.xen "tools")
+			(guix.operating-system-packages-fragment foundation-common)))
 		(services-fragment (append
 			(list
 				(guix.service guix.kernel-module-loader-service-type
@@ -295,11 +299,18 @@
 (define qubes-guest
 	(guix.operating-system-fragment
 		(inherit xen-guest)
-		(packages-fragment
-			; Leaving out the xen-guest packages entirely because it only provides xen, which is
-			; overridden by qubes-xen. If xen-guest gets more packages added then this needs to
-			; be updated too, and needs to filter out the primary xen package.
-			(list guix.qubesdb (list guix.qubes-xen "tools")))
+		(packages-fragment (cons
+			guix.qubesdb
+			(map (match-lambda
+			       ((package output)
+			        (if (string=? (guix.package-name package) "xen")
+			          (list guix.qubes-xen output)
+			          (list package output)))
+			       (package
+			        (if (string=? (guix.package-name package) "xen")
+			          guix.qubes-xen
+			          package)))
+			     (guix.operating-system-packages-fragment xen-guest))))
 		(services-fragment (append
 			(list
 				(guix.service guix.qubesdb-service-type)
