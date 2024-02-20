@@ -190,7 +190,7 @@
 			guix.eudev ; sets up /dev directory; eudev is the gentoo fork of plain udev
 			guix.glibc-locales
 			guix.kmod ; kernel module utils: modprobe, etc
-			guix.nss-certs ; required for https
+			guix.nss-certs ; required for https (trust rooted in Mozilla)
 			guix.shadow
 			guix.sudo))
 
