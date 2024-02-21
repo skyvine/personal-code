@@ -34,41 +34,24 @@
 
 	#:export (
 		home
-		; A home-environment conaining my preferred configuration
+		; A home-environment
 ))
-
-(use-modules
-	(skyler standard)
-	((skyler guix utils)        #:prefix sky.)
-	((skyler guix packages)     #:prefix sky.)
-	((skyler guix collections)  #:prefix sky.))
 
 (read-set! keywords 'postfix)
 
-(define (path-append name . paths)
-	(cons name (format #f "${~a:+$~a:}~a"
-	                      name
-	                      name
-	                      (reduce (lambda (next current) (string-append current ":" next))
-	                              (first paths)
-	                              paths))))
-
 (define home
 	(guix.home-environment
-		(packages sky.essential-packages)
 		(services (list
 			(guix.service guix.home-bash-service-type
-				(guix.home-bash-configuration (guix-defaults? #t)))
-			(guix.service guix.home-fish-service-type
-				(guix.home-fish-configuration))
+				(guix.home-bash-configuration
+					(aliases '(
+						("ls" . "ls --color=auto")
+						("authenticate-guix-checkout" .
+						 "guix git authenticate 9edb3f66fd807b096b48283debdcddccfea34bad 'BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA'")
+					))
+					(guix-defaults? #t)))
 			(guix.simple-service 'custom-env-vars
 				guix.home-environment-variables-service-type
-				(list (cons "EDITOR" "nvim")
-
-				      (path-append "PATH"            "$HOME/.local/bin")
-				      (path-append "GUILE_LOAD_PATH" "$HOME/.guix-profile/share/guile/site/3.0")
-
-				      (path-append "GUILE_LOAD_COMPILED_PATH"
-				                   "$HOME/.guix-profile/lib/guile/3.0/site-ccache")))))))
+				'(("EDITOR" . "nvim")))))))
 
 home
