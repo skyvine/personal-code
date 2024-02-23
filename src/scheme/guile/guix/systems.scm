@@ -63,44 +63,37 @@
 	       (groups          (cons (guix.user-group (name username) (id 1000))
 	                              guix.%base-groups))
 	       (keyboard-layout (guix.keyboard-layout "us" "dvp" options: '("caps:escape"))))
-		(guix.operating-system
-			(host-name "nest")
-			(timezone  "US/Pacific")
-			(locale    "en_US.utf8")
+		((compose foundation
+		          terminal-utils
+		          development
+		          compression
+		          (tty keyboard-layout users groups)
+		          qubes-guest)
+			(guix.operating-system
+				(host-name "nest")
+				(timezone  "US/Pacific")
+				(locale    "en_US.utf8")
 
-			(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
-			                                           (targets '("/dev/xvda"))))
-			(kernel-arguments (cons "video=1920x1080"
-			                        guix.%default-kernel-arguments))
+				(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
+				                                           (targets '("/dev/xvda"))))
+				(kernel-arguments (cons "video=1920x1080"
+				                        guix.%default-kernel-arguments))
 
-			(file-systems (list (guix.file-system
-					(device (guix.file-system-label "GUIX_ROOT"))
-					(mount-point "/")
-					(type "ext4"))))
+				(file-systems (list (guix.file-system
+						(device (guix.file-system-label "GUIX_ROOT"))
+						(mount-point "/")
+						(type "ext4"))))
 
-			(users  users)
-			(groups groups)
+				(users  users)
+				(groups groups)
 
-			(services (list
-				(guix.service guix.openssh-service-type
-					(guix.openssh-configuration
-						(openssh                            guix.openssh-sans-x)
-						(password-authentication?           #f)
-						(challenge-response-authentication? #f)
-						(use-pam?                           #f)))))
-
-			(fragments (list
-				; Foundation
-				qubes-guest
-
-				; Presentation
-				(tty keyboard-layout users groups)
-
-				; Application
-				compression
-				development
-				(email)
-				terminal-utils)))))
+				(services (list
+					(guix.service guix.openssh-service-type
+						(guix.openssh-configuration
+							(openssh                            guix.openssh-sans-x)
+							(password-authentication?           #f)
+							(challenge-response-authentication? #f)
+							(use-pam?                           #f)))))))))
 
 (define utility
 	(let ((users (cons (guix.user-account (name "raven")
@@ -117,27 +110,22 @@
 	      (file-systems (list (guix.file-system (mount-point "/")
 	                          (device (guix.file-system-label "Guix_image"))
 	                          (type "ext4")))))
-		(guix.operating-system
-			(host-name "roost")
-			(timezone  "US/Pacific")
-			(locale    "en_US.utf8")
+		((compose foundation
+		          bare-metal
+		          (tty keyboard-layout users groups)
 
-			(users users)
-			(groups groups)
-			(file-systems file-systems)
+		          compression
+		          terminal-utils)
+			(guix.operating-system
+				(host-name "roost")
+				(timezone  "US/Pacific")
+				(locale    "en_US.utf8")
 
-			(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
-			                                           (targets '("/dev/sda"))))
+				(users users)
+				(groups groups)
+				(file-systems file-systems)
 
-			(keyboard-layout keyboard-layout)
+				(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
+				                                           (targets '("/dev/sda"))))
 
-			(fragments (list
-				; Foundation
-				bare-metal
-
-				; Presentation
-				(tty keyboard-layout users groups)
-
-				; Application
-				compression
-				terminal-utils)))))
+				(keyboard-layout keyboard-layout)))))
