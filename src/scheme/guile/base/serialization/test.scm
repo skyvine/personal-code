@@ -121,7 +121,7 @@
 
 (define-method (equal? (lhs <complex-class>) (rhs <complex-class>))
 	(equal? (slot-ref lhs 'slot-containing-user-defined-class) 
-	        (slot-ref lhs 'slot-containing-user-defined-class)))
+	        (slot-ref rhs 'slot-containing-user-defined-class)))
 
 (define primitives `(
 	("Boolean True"      . #t)
