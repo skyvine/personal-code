@@ -77,16 +77,19 @@
 				(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
 				                                           (targets '("/dev/xvda"))))
 				(kernel-arguments (cons "video=1920x1080"
-				                        guix.%default-kernel-arguments))
+				                         guix.%default-kernel-arguments))
 
-				(file-systems (list (guix.file-system
+				(file-systems (cons
+					(guix.file-system
 						(device (guix.file-system-label "GUIX_ROOT"))
 						(mount-point "/")
-						(type "ext4"))))
+						(type "ext4"))
+					guix.%base-file-systems))
 
-				(users  users)
-				(groups groups)
+				(users  (append users  guix.%base-user-accounts))
+				(groups (append groups guix.%base-groups))
 
+				(packages '())
 				(services (list
 					(guix.service guix.openssh-service-type
 						(guix.openssh-configuration
@@ -121,9 +124,10 @@
 				(timezone  "US/Pacific")
 				(locale    "en_US.utf8")
 
-				(users users)
-				(groups groups)
-				(file-systems file-systems)
+				(users  (append users  guix.%base-user-accounts))
+				(groups (append groups guix.%base-groups))
+
+				(file-systems (append file-systems guix.%base-file-systems))
 
 				(bootloader (guix.bootloader-configuration (bootloader guix.grub-bootloader)
 				                                           (targets '("/dev/sda"))))
