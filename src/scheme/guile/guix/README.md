@@ -1,1 +1,0 @@
-Note that some of the code here depends on commits added to [my copy of Guix](https://git.sr.ht/~skyvine/guix). As explained there, I will send that work upstream at some point. The copy is not meant for general use (it is unstable, syncs with upstream at an irregular schedule, and rewrites history frequently).
