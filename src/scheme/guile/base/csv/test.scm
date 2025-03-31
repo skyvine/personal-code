@@ -35,10 +35,9 @@
 ))
 
 (define-test parse-non-empty-bare-entries "Non-empty entries"
-	(csv-test
-		'(("one"  "two" "three"  "four")
-		  ("five" "six" "seven"  "eight")
-		  ("nine" "ten" "eleven" "twelve"))))
+	(csv-test '(("one"  "two" "three"  "four")
+	            ("five" "six" "seven"  "eight")
+	            ("nine" "ten" "eleven" "twelve"))))
 
 (define-test single-line "Single line"
 	(csv-test '(("one"  "two" "three"  "four"))))
@@ -50,8 +49,8 @@
 
 (define-test middle-entry-is-empty "Middle entry is empty"
 	(csv-test '(("one"  ""    "three" "four")
-							("five" "six" ""      "eight")
-							("nine" ""    ""      "twelve"))))
+	            ("five" "six" ""      "eight")
+	            ("nine" ""    ""      "twelve"))))
 
 (define-test last-entry-is-empty "Last entry is empty"
 	(csv-test '(("one"  "two" "three"  "")
